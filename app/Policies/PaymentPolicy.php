@@ -23,6 +23,17 @@ class PaymentPolicy
         return $user->isStudent() || $user->can('payments.create');
     }
 
+    /**
+     * Editing amount/method — only while still pending. Once confirmed or
+     * refunded, the record is part of the financial trail; changing it after
+     * the fact is exactly the kind of silent-drift the spec's "one canonical
+     * record" rule exists to prevent. Fix it via refund + new payment instead.
+     */
+    public function update(User $user, Payment $payment): bool
+    {
+        return $user->can('payments.update') && ! $user->isStudent() && $payment->status === 'pending';
+    }
+
     public function confirm(User $user, Payment $payment): bool
     {
         return $user->can('payments.confirm') && ! $user->isStudent();

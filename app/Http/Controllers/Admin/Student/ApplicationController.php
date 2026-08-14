@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Admin\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreApplicationRequest;
+use App\Http\Requests\Admin\UpdateApplicationRequest;
+use App\Models\Course;
 use App\Models\Status;
 use App\Models\StatusTransition;
 use App\Models\StudyApplication;
+use App\Models\University;
 use App\Models\User;
 use App\Models\VisaApplication;
 use App\Services\ApplicationStatusService;
@@ -21,6 +25,86 @@ use Illuminate\Validation\Rule;
  */
 class ApplicationController extends Controller
 {
+    /**
+     * Admin creating an application ON BEHALF of a student — mirrors the
+     * student's own ApplicationController::store(), except University and
+     * Course are free-text here rather than a catalog dropdown. Admin
+     * routinely needs to log an application to a university that isn't in
+     * the system yet; firstOrCreate() means the catalog grows organically
+     * from real admin usage instead of needing to be pre-seeded exhaustively.
+     */
+    public function store(StoreApplicationRequest $request, User $student): RedirectResponse
+    {
+        abort_unless($student->hasRole('student'), 404);
+
+        $university = University::firstOrCreate(
+            ['name' => $request->string('university_name')],
+            ['country' => $request->string('university_country'), 'is_active' => true]
+        );
+
+        $course = Course::firstOrCreate(
+            ['university_id' => $university->id, 'name' => $request->string('course_name')],
+            ['study_level' => $request->string('study_level'), 'is_active' => true]
+        );
+
+        $startStatus = Status::where('type', 'application')->where('slug', 'application_started')->firstOrFail();
+
+        $application = StudyApplication::create([
+            'student_id' => $student->id,
+            'university_id' => $university->id,
+            'course_id' => $course->id,
+            'status_id' => $startStatus->id,
+            'intake' => $request->input('intake'),
+            'application_deadline' => $request->input('application_deadline'),
+            'assigned_officer_id' => $request->user()->id,
+            'application_fee' => $request->input('application_fee', 0),
+            'tuition_fee' => $request->input('tuition_fee', 0),
+            'service_fee' => $request->input('service_fee', 0),
+            'currency' => $request->input('currency') ?: 'KES',
+            'submitted_at' => now(),
+        ]);
+
+        return back()->with('success', "Application to {$university->name} created for {$student->name}.");
+    }
+
+    public function update(UpdateApplicationRequest $request, User $student, StudyApplication $application): RedirectResponse
+    {
+        abort_unless($application->student_id === $student->id, 404);
+
+        $university = University::firstOrCreate(
+            ['name' => $request->string('university_name')],
+            ['country' => $request->string('university_country'), 'is_active' => true]
+        );
+
+        $course = Course::firstOrCreate(
+            ['university_id' => $university->id, 'name' => $request->string('course_name')],
+            ['study_level' => $request->string('study_level'), 'is_active' => true]
+        );
+
+        $application->update([
+            'university_id' => $university->id,
+            'course_id' => $course->id,
+            'intake' => $request->input('intake'),
+            'application_deadline' => $request->input('application_deadline'),
+            'application_fee' => $request->input('application_fee', $application->application_fee),
+            'tuition_fee' => $request->input('tuition_fee', $application->tuition_fee),
+            'service_fee' => $request->input('service_fee', $application->service_fee),
+            'currency' => $request->input('currency') ?: $application->currency,
+        ]);
+
+        return back()->with('success', 'Application details updated.');
+    }
+
+    public function destroy(Request $request, User $student, StudyApplication $application): RedirectResponse
+    {
+        $this->authorize('delete', $application);
+        abort_unless($application->student_id === $student->id, 404);
+
+        $application->delete(); // soft delete — StudyApplication uses SoftDeletes
+
+        return redirect()->route('admin.students.show', $student)->with('success', 'Application deleted.');
+    }
+
     public function changeStatus(Request $request, User $student, StudyApplication $application, ApplicationStatusService $service): RedirectResponse
     {
         $this->authorize('changeStatus', $application);

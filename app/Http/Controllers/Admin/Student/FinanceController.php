@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreInvoiceRequest;
+use App\Http\Requests\Admin\StorePaymentRequest;
+use App\Http\Requests\Admin\UpdatePaymentRequest;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
@@ -16,6 +18,46 @@ use Illuminate\Support\Facades\DB;
 
 class FinanceController extends Controller
 {
+    /**
+     * Admin manually recording a payment — e.g. cash received in person, or
+     * a bank transfer confirmed outside the system. Uses the same
+     * PaymentService as the student's own "Pay Now" flow; the only difference
+     * is an optional immediate-confirm, since Admin is asserting the money
+     * already changed hands rather than reporting an in-progress attempt.
+     */
+    public function storePayment(StorePaymentRequest $request, User $student, Invoice $invoice, PaymentService $service): RedirectResponse
+    {
+        abort_unless($invoice->student_id === $student->id, 404);
+
+        $payment = $service->recordPayment($invoice, (float) $request->input('amount'), $request->string('method'));
+
+        if ($request->filled('reference')) {
+            $payment->transactions()->create([
+                'gateway' => 'manual',
+                'gateway_reference' => $request->string('reference'),
+                'status' => $request->boolean('confirm_immediately') ? 'confirmed' : 'pending',
+            ]);
+        }
+
+        if ($request->boolean('confirm_immediately')) {
+            $service->confirmPayment($payment, $request->user());
+        }
+
+        return back()->with('success', 'Payment recorded'.($request->boolean('confirm_immediately') ? ' and confirmed.' : ' as pending confirmation.'));
+    }
+
+    public function updatePayment(UpdatePaymentRequest $request, User $student, Payment $payment): RedirectResponse
+    {
+        abort_unless($payment->student_id === $student->id, 404);
+
+        $payment->update([
+            'amount' => $request->input('amount'),
+            'method' => $request->string('method'),
+        ]);
+
+        return back()->with('success', 'Payment updated.');
+    }
+
     public function refundPayment(Request $request, User $student, Payment $payment, PaymentService $service): RedirectResponse
     {
         $this->authorize('refund', $payment);

@@ -116,6 +116,7 @@ Route::middleware([
 
         // The unified Student workspace.
         Route::get('/students/{student}', [StudentWorkspaceController::class, 'show'])->name('students.show');
+        Route::patch('/students/{student}/profile', [StudentWorkspaceController::class, 'updateProfile'])->name('students.profile.update');
 
         // Document preview — admin-scoped, fixes the 403 the student-side download
         // route caused (it sat behind role:student middleware, blocking all staff).
@@ -123,25 +124,37 @@ Route::middleware([
 
         Route::post('/students/{student}/documents/{document}/verify', [StudentWorkspaceController::class, 'verifyDocument'])->name('students.documents.verify');
         Route::post('/students/{student}/documents/{document}/reject', [StudentWorkspaceController::class, 'rejectDocument'])->name('students.documents.reject');
+        Route::post('/students/{student}/documents/request', [StudentWorkspaceController::class, 'requestDocument'])->name('students.documents.request');
+        Route::post('/students/{student}/documents/{document}/upload', [StudentWorkspaceController::class, 'uploadDocument'])->name('students.documents.upload');
+        Route::patch('/students/{student}/documents/{document}', [StudentWorkspaceController::class, 'updateDocument'])->name('students.documents.update');
+        Route::delete('/students/{student}/documents/{document}', [StudentWorkspaceController::class, 'deleteDocument'])->name('students.documents.destroy');
         Route::post('/students/{student}/payments/{payment}/confirm', [StudentWorkspaceController::class, 'confirmPayment'])->name('students.payments.confirm');
 
         // Applications / Documents (per-app) / Admission / Visa
+        Route::post('/students/{student}/applications', [AdminApplicationController::class, 'store'])->name('students.applications.store');
+        Route::patch('/students/{student}/applications/{application}', [AdminApplicationController::class, 'update'])->name('students.applications.update');
+        Route::delete('/students/{student}/applications/{application}', [AdminApplicationController::class, 'destroy'])->name('students.applications.destroy');
         Route::post('/students/{student}/applications/{application}/status', [AdminApplicationController::class, 'changeStatus'])->name('students.applications.status');
         Route::post('/students/{student}/applications/{application}/assign-officer', [AdminApplicationController::class, 'assignOfficer'])->name('students.applications.assign_officer');
         Route::post('/students/{student}/applications/{application}/admission', [AdminApplicationController::class, 'updateAdmission'])->name('students.applications.admission');
         Route::post('/students/{student}/applications/{application}/visa', [AdminApplicationController::class, 'updateVisa'])->name('students.applications.visa');
 
         // Payments / Invoices
+        Route::post('/students/{student}/invoices/{invoice}/payments', [AdminFinanceController::class, 'storePayment'])->name('students.invoices.payments.store');
+        Route::patch('/students/{student}/payments/{payment}', [AdminFinanceController::class, 'updatePayment'])->name('students.payments.update');
         Route::post('/students/{student}/payments/{payment}/refund', [AdminFinanceController::class, 'refundPayment'])->name('students.payments.refund');
         Route::post('/students/{student}/invoices', [AdminFinanceController::class, 'storeInvoice'])->name('students.invoices.store');
         Route::post('/students/{student}/invoices/{invoice}/send', [AdminFinanceController::class, 'sendInvoice'])->name('students.invoices.send');
         Route::post('/students/{student}/invoices/{invoice}/cancel', [AdminFinanceController::class, 'cancelInvoice'])->name('students.invoices.cancel');
 
         // Appointments / Messages / Tasks / Notes
+        Route::post('/students/{student}/appointments', [AdminEngagementController::class, 'storeAppointment'])->name('students.appointments.store');
+        Route::patch('/students/{student}/appointments/{appointment}', [AdminEngagementController::class, 'updateAppointment'])->name('students.appointments.update');
         Route::post('/students/{student}/appointments/{appointment}/confirm', [AdminEngagementController::class, 'confirmAppointment'])->name('students.appointments.confirm');
         Route::post('/students/{student}/appointments/{appointment}/cancel', [AdminEngagementController::class, 'cancelAppointment'])->name('students.appointments.cancel');
         Route::post('/students/{student}/appointments/{appointment}/complete', [AdminEngagementController::class, 'completeAppointment'])->name('students.appointments.complete');
 
+        Route::post('/students/{student}/tickets', [AdminEngagementController::class, 'storeTicket'])->name('students.tickets.store');
         Route::post('/students/{student}/tickets/{ticket}/reply', [AdminEngagementController::class, 'replyTicket'])->name('students.tickets.reply');
         Route::post('/students/{student}/tickets/{ticket}/status', [AdminEngagementController::class, 'updateTicketStatus'])->name('students.tickets.status');
 

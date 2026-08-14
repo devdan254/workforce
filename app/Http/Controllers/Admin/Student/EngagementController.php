@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreAppointmentRequest;
 use App\Http\Requests\Admin\StoreNoteRequest;
 use App\Http\Requests\Admin\StoreSupportReplyRequest;
+use App\Http\Requests\Admin\StoreSupportTicketRequest;
 use App\Http\Requests\Admin\StoreTaskRequest;
+use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Note;
 use App\Models\StudentProfile;
@@ -24,6 +27,31 @@ use Illuminate\Validation\Rule;
  */
 class EngagementController extends Controller
 {
+    /**
+     * Admin booking an appointment ON BEHALF OF a student — lives in the
+     * Appointments tab (not a global admin menu item), since an appointment
+     * is fundamentally scoped to one student. A cross-student calendar/list
+     * view would be a genuinely different feature, not built here.
+     */
+    public function storeAppointment(StoreAppointmentRequest $request, User $student): RedirectResponse
+    {
+        Appointment::create([
+            'student_id' => $student->id,
+            'staff_id' => $request->input('staff_id') ?? $request->user()->id,
+            'study_application_id' => $request->input('study_application_id'),
+            'type' => $request->string('type'),
+            'mode' => $request->string('mode'),
+            'scheduled_at' => $request->date('scheduled_at'),
+            // Admin-booked appointments start confirmed — unlike a student's own
+            // request (which starts as "requested" awaiting staff confirmation),
+            // staff booking it themselves IS the confirmation.
+            'status' => 'confirmed',
+            'notes' => $request->input('notes'),
+        ]);
+
+        return back()->with('success', 'Appointment booked and confirmed.');
+    }
+
     public function confirmAppointment(Request $request, User $student, Appointment $appointment): RedirectResponse
     {
         $this->authorize('update', $appointment);
@@ -55,6 +83,51 @@ class EngagementController extends Controller
         $appointment->update(['status' => 'completed']);
 
         return back()->with('success', 'Appointment marked completed.');
+    }
+
+    /**
+     * Editing an existing appointment — unlike the student's own reschedule
+     * (which resets to "requested" for re-confirmation), Admin editing it
+     * does NOT reset status. Admin IS the confirming authority, so directly
+     * correcting the time/staff/type doesn't need Admin to re-confirm their
+     * own change.
+     */
+    public function updateAppointment(UpdateAppointmentRequest $request, User $student, Appointment $appointment): RedirectResponse
+    {
+        abort_unless($appointment->student_id === $student->id, 404);
+
+        $appointment->update([
+            'type' => $request->string('type'),
+            'mode' => $request->string('mode'),
+            'scheduled_at' => $request->date('scheduled_at'),
+            'staff_id' => $request->input('staff_id') ?? $appointment->staff_id,
+        ]);
+
+        return back()->with('success', 'Appointment updated.');
+    }
+
+    /**
+     * Admin PROACTIVELY opening a new ticket TO a student — distinct from
+     * replyTicket() below, which responds to a ticket the student already
+     * raised. Starts at "waiting_for_student" since staff spoke first.
+     */
+    public function storeTicket(StoreSupportTicketRequest $request, User $student): RedirectResponse
+    {
+        $ticket = SupportTicket::create([
+            'student_id' => $student->id,
+            'category' => $request->string('category'),
+            'priority' => $request->string('priority'),
+            'subject' => $request->string('subject'),
+            'status' => 'waiting_for_student',
+            'assigned_to' => $request->user()->id,
+        ]);
+
+        $ticket->messages()->create([
+            'user_id' => $request->user()->id,
+            'body' => $request->string('message'),
+        ]);
+
+        return back()->with('success', "Message sent to {$student->name}.");
     }
 
     /**

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RequestDocumentRequest;
+use App\Http\Requests\Admin\UpdateStudentProfileRequest;
 use App\Models\Document;
+use App\Models\DocumentCategory;
 use App\Models\Invoice;
 use App\Models\Note;
 use App\Models\Payment;
@@ -11,6 +14,7 @@ use App\Models\StudentProfile;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\VisaApplication;
+use App\Notifications\DocumentRequestedNotification;
 use App\Services\DocumentVerificationService;
 use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
@@ -90,6 +94,7 @@ class StudentWorkspaceController extends Controller
         $notes = $this->noteQuery($student)?->with('createdBy')->latest()->get() ?? collect();
 
         $officers = User::whereHas('roles', fn ($q) => $q->whereNotIn('name', ['student']))->orderBy('name')->get();
+        $categories = DocumentCategory::orderBy('name')->get();
 
         $activities = $this->activityForStudent($student, $applications, $allDocuments->flatten(), $allPayments);
 
@@ -114,8 +119,33 @@ class StudentWorkspaceController extends Controller
             'tasks' => $tasks,
             'notes' => $notes,
             'officers' => $officers,
+            'categories' => $categories,
             'activities' => $activities,
         ]);
+    }
+
+    /**
+     * Admin editing a student's Personal/Academic/Passport info on their
+     * behalf — same StudentProfile fields the student can edit themselves
+     * at /student/profile, just reachable from the workspace's Personal
+     * Information tab instead. Recalculates profile_completion_percent
+     * exactly like the student-side save does, so the two paths never
+     * leave that number out of sync.
+     */
+    public function updateProfile(UpdateStudentProfileRequest $request, User $student): RedirectResponse
+    {
+        if ($request->filled('phone')) {
+            $student->update(['phone' => $request->string('phone')]);
+        }
+
+        $profile = $student->studentProfile()->updateOrCreate(
+            ['user_id' => $student->id],
+            $request->safe()->except('phone')
+        );
+
+        $profile->update(['profile_completion_percent' => $profile->calculateCompletionPercent()]);
+
+        return back()->with('success', "{$student->name}'s profile updated.");
     }
 
     /**
@@ -154,6 +184,92 @@ class StudentWorkspaceController extends Controller
         $service->reject($document, $request->user(), $request->string('reason'));
 
         return back()->with('success', "\"{$document->name}\" rejected — the student will see your reason and can re-upload.");
+    }
+
+    /**
+     * Admin REQUESTING a document — the inverse of a student's own
+     * "Add Document" self-service flow. Creates a `required` row with no
+     * file, optionally tied to a specific application (via
+     * study_application_id) or general/vault-level if left blank. Either
+     * way it's the same `documents` table — no duplicate concept for
+     * "requested" vs "self-added" documents.
+     */
+    public function requestDocument(RequestDocumentRequest $request, User $student): RedirectResponse
+    {
+        abort_unless($student->hasRole('student'), 404);
+
+        $document = Document::create([
+            'student_id' => $student->id,
+            'study_application_id' => $request->input('study_application_id'),
+            'document_category_id' => $request->integer('document_category_id'),
+            'name' => $request->string('name'),
+            'status' => 'required',
+        ]);
+
+        $student->notify(new DocumentRequestedNotification($document));
+
+        return back()->with('success', "\"{$document->name}\" requested from {$student->name}.");
+    }
+
+    /**
+     * Admin/staff uploading a FILE directly onto an existing document row —
+     * e.g. they received it by email or in person and are logging it into
+     * the system on the student's behalf. Uses the same DocumentVerificationService
+     * as every other upload path (student self-upload, replace-rejected) —
+     * one place a file transitions a document to under_review, always.
+     */
+    public function uploadDocument(Request $request, User $student, Document $document, DocumentVerificationService $service): RedirectResponse
+    {
+        $this->authorize('upload', $document);
+        abort_unless($document->student_id === $student->id, 404);
+
+        $request->validate(['file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png']]);
+
+        $path = $request->file('file')->store("documents/{$student->id}", 'public');
+
+        $service->markUploaded(
+            $document,
+            $path,
+            $request->file('file')->getClientMimeType(),
+            $request->file('file')->getSize(),
+        );
+
+        return back()->with('success', "\"{$document->name}\" uploaded on behalf of {$student->name}.");
+    }
+
+    /**
+     * Metadata edit — rename or re-categorize. Does NOT touch the file or
+     * status; that's upload()/verify()/reject()'s job respectively.
+     */
+    public function updateDocument(Request $request, User $student, Document $document): RedirectResponse
+    {
+        $this->authorize('update', $document);
+        abort_unless($document->student_id === $student->id, 404);
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'document_category_id' => ['required', 'exists:document_categories,id'],
+        ]);
+
+        $document->update([
+            'name' => $request->string('name'),
+            'document_category_id' => $request->integer('document_category_id'),
+        ]);
+
+        return back()->with('success', 'Document updated.');
+    }
+
+    public function deleteDocument(User $student, Document $document): RedirectResponse
+    {
+        $this->authorize('delete', $document);
+        abort_unless($document->student_id === $student->id, 404);
+
+        if ($document->file_path) {
+            Storage::disk('public')->delete($document->file_path);
+        }
+        $document->delete();
+
+        return back()->with('success', 'Document deleted.');
     }
 
     public function confirmPayment(Request $request, User $student, Payment $payment, PaymentService $service): RedirectResponse

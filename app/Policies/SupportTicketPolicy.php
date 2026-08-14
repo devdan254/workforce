@@ -14,7 +14,11 @@ class SupportTicketPolicy
 
     public function create(User $user): bool
     {
-        return $user->isStudent(); // staff don't file tickets on their own behalf here
+        // Students file their own tickets. Staff can ALSO proactively open one
+        // TO a student (e.g. "we noticed X, please clarify Y") — tickets.respond
+        // is the right gate since it's the same permission that lets you
+        // participate in a ticket at all.
+        return $user->isStudent() || $user->can('tickets.respond');
     }
 
     public function view(User $user, SupportTicket $ticket): bool

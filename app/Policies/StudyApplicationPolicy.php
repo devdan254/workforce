@@ -66,4 +66,14 @@ class StudyApplicationPolicy
     {
         return $user->hasAnyRole(['super_admin', 'admin_officer']);
     }
+
+    /**
+     * Soft-delete only (StudyApplication has SoftDeletes) — restricted to the
+     * two highest trust levels, matching assignOfficer's bar. Deleting an
+     * application is a materially bigger action than editing one.
+     */
+    public function delete(User $user, StudyApplication $application): bool
+    {
+        return $user->hasAnyRole(['super_admin', 'admin_officer']);
+    }
 }

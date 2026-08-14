@@ -37,6 +37,21 @@ class UserPolicy
         return $user->can('students.update');
     }
 
+    /**
+     * Editing Personal/Academic/Passport info — deliberately broader than
+     * update() above. The user's own framing for this feature: every
+     * appointed role counts as "admin" for day-to-day student management,
+     * not just Admin Officer/Super Admin. update() stays restricted because
+     * it covers account-level changes (name/email/suspend); editing a
+     * student's profile details is lower-stakes and something any staff
+     * member working with that student should be able to do — students.view
+     * is the right bar, since every role already has it.
+     */
+    public function editProfile(User $user, User $student): bool
+    {
+        return $user->can('students.view') && ! $user->isStudent();
+    }
+
     public function suspend(User $user, User $student): bool
     {
         return $user->can('students.update');
