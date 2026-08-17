@@ -47,7 +47,7 @@ class User extends Authenticatable
             ->dontSubmitEmptyLogs();
     }
 
-    /* ---------- Relationships ---------- */
+    /* ---------- Relationships (Student) ---------- */
 
     public function studentProfile(): HasOne
     {
@@ -63,6 +63,25 @@ class User extends Authenticatable
     {
         return $this->hasMany(StudyApplication::class, 'assigned_officer_id');
     }
+
+    /* ---------- Relationships (Job Seeker) ---------- */
+
+    public function jobSeekerProfile(): HasOne
+    {
+        return $this->hasOne(JobSeekerProfile::class);
+    }
+
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'job_seeker_id');
+    }
+
+    public function assignedJobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'assigned_officer_id');
+    }
+
+    /* ---------- Relationships (shared — student_id column serves both) ---------- */
 
     public function documents(): HasMany
     {
@@ -106,8 +125,13 @@ class User extends Authenticatable
         return $this->hasRole('student');
     }
 
+    public function isJobSeeker(): bool
+    {
+        return $this->hasRole('job_seeker');
+    }
+
     public function isStaff(): bool
     {
-        return ! $this->isStudent();
+        return ! $this->isStudent() && ! $this->isJobSeeker();
     }
 }

@@ -1,11 +1,30 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
+use App\Http\Controllers\Admin\OnboardingController as AdminOnboardingController;
 use App\Http\Controllers\Admin\Student\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Admin\Student\EngagementController as AdminEngagementController;
 use App\Http\Controllers\Admin\Student\FinanceController as AdminFinanceController;
+use App\Http\Controllers\Admin\JobSeeker\ApplicationController as AdminJobSeekerApplicationController;
+use App\Http\Controllers\Admin\JobSeeker\EngagementController as AdminJobSeekerEngagementController;
+use App\Http\Controllers\Admin\JobSeeker\FinanceController as AdminJobSeekerFinanceController;
+use App\Http\Controllers\Admin\JobSeekerController as AdminJobSeekerController;
+use App\Http\Controllers\Admin\JobSeekerWorkspaceController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
 use App\Http\Controllers\Admin\StudentWorkspaceController;
+use App\Http\Controllers\JobSeeker\ApplicationController as JobSeekerApplicationController;
+use App\Http\Controllers\JobSeeker\ApplicationWizardController;
+use App\Http\Controllers\JobSeeker\AppointmentController as JobSeekerAppointmentController;
+use App\Http\Controllers\JobSeeker\DashboardController as JobSeekerDashboardController;
+use App\Http\Controllers\JobSeeker\DocumentController as JobSeekerDocumentController;
+use App\Http\Controllers\JobSeeker\InvoiceController as JobSeekerInvoiceController;
+use App\Http\Controllers\JobSeeker\JobController as JobSeekerJobController;
+use App\Http\Controllers\JobSeeker\OfferController as JobSeekerOfferController;
+use App\Http\Controllers\JobSeeker\PaymentController as JobSeekerPaymentController;
+use App\Http\Controllers\JobSeeker\ProfileController as JobSeekerProfileController;
+use App\Http\Controllers\JobSeeker\SupportTicketController as JobSeekerSupportTicketController;
+use App\Http\Controllers\JobSeeker\VisaController as JobSeekerVisaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\ApplicationController;
 use App\Http\Controllers\Student\AppointmentController;
@@ -91,6 +110,82 @@ Route::middleware(['auth', 'verified', 'role:student'])
 
 /*
 |--------------------------------------------------------------------------
+| Job Seeker Portal (Stage 2)
+|--------------------------------------------------------------------------
+| Only Dashboard is real this step — the rest are TODO placeholders so the
+| layout's sidebar links resolve without error, matching exactly how the
+| Student Portal routes were built incrementally (see routes.index.* pattern
+| history). Each placeholder gets replaced with a real controller action in
+| its own dedicated step, per the spec's build order.
+*/
+Route::middleware(['auth', 'verified', 'role:job_seeker'])
+    ->prefix('job-seeker')
+    ->name('job-seeker.')
+    ->group(function () {
+        Route::get('/dashboard', [JobSeekerDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/jobs', [JobSeekerJobController::class, 'index'])->name('jobs.index');
+        Route::get('/jobs/{jobPosting}', [JobSeekerJobController::class, 'show'])->name('jobs.show');
+
+        Route::get('/jobs/{jobPosting}/apply', [ApplicationWizardController::class, 'start'])->name('jobs.apply');
+        Route::get('/jobs/{jobPosting}/apply/step/{step}', [ApplicationWizardController::class, 'showStep'])->name('jobs.apply.step');
+        Route::post('/jobs/{jobPosting}/apply/step/{step}', [ApplicationWizardController::class, 'saveStep'])->name('jobs.apply.save');
+        Route::post('/jobs/{jobPosting}/apply/parse-cv', [ApplicationWizardController::class, 'parseCv'])->name('jobs.apply.parse_cv');
+        Route::post('/jobs/{jobPosting}/apply/upload/{slot}', [ApplicationWizardController::class, 'uploadDocument'])->name('jobs.apply.upload');
+        Route::post('/jobs/{jobPosting}/apply/submit', [ApplicationWizardController::class, 'submit'])->name('jobs.apply.submit');
+
+        Route::get('/applications', [JobSeekerApplicationController::class, 'index'])->name('applications.index');
+        Route::get('/applications/{application}', [JobSeekerApplicationController::class, 'show'])->name('applications.show');
+        Route::post('/applications/{application}/documents/{document}/upload', [JobSeekerApplicationController::class, 'uploadDocument'])->name('applications.documents.upload');
+        Route::get('/applications/{application}/visa', [JobSeekerVisaController::class, 'show'])->name('applications.visa');
+
+        Route::get('/documents', [JobSeekerDocumentController::class, 'index'])->name('documents.index');
+        Route::post('/documents', [JobSeekerDocumentController::class, 'store'])->name('documents.store');
+        Route::post('/documents/{document}/upload', [JobSeekerDocumentController::class, 'upload'])->name('documents.upload');
+        Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+
+        Route::get('/payments', [JobSeekerPaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/{payment}/receipt', [JobSeekerPaymentController::class, 'receipt'])->name('payments.receipt');
+
+        Route::get('/invoices', [JobSeekerInvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('/invoices/{invoice}', [JobSeekerInvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('/invoices/{invoice}/download', [JobSeekerInvoiceController::class, 'downloadPdf'])->name('invoices.download');
+        Route::post('/invoices/{invoice}/payments', [JobSeekerPaymentController::class, 'store'])->name('invoices.payments.store');
+
+        Route::get('/appointments', [JobSeekerAppointmentController::class, 'index'])->name('appointments.index');
+        Route::patch('/appointments/{appointment}', [JobSeekerAppointmentController::class, 'reschedule'])->name('appointments.reschedule');
+        Route::post('/appointments/{appointment}/cancel', [JobSeekerAppointmentController::class, 'cancel'])->name('appointments.cancel');
+
+        Route::get('/offers', [JobSeekerOfferController::class, 'index'])->name('offers.index');
+        Route::get('/offers/{offer}', [JobSeekerOfferController::class, 'show'])->name('offers.show');
+        Route::post('/offers/{offer}/accept', [JobSeekerOfferController::class, 'accept'])->name('offers.accept');
+        Route::post('/offers/{offer}/decline', [JobSeekerOfferController::class, 'decline'])->name('offers.decline');
+        Route::post('/offers/{offer}/clarify', [JobSeekerOfferController::class, 'requestClarification'])->name('offers.clarify');
+        Route::get('/offers/{offer}/download-letter', [JobSeekerOfferController::class, 'downloadLetter'])->name('offers.download_letter');
+
+        Route::get('/support', [JobSeekerSupportTicketController::class, 'index'])->name('support.index');
+        Route::get('/support/create', [JobSeekerSupportTicketController::class, 'create'])->name('support.create');
+        Route::post('/support', [JobSeekerSupportTicketController::class, 'store'])->name('support.store');
+        Route::get('/support/{ticket}', [JobSeekerSupportTicketController::class, 'show'])->name('support.show');
+        Route::post('/support/{ticket}/reply', [JobSeekerSupportTicketController::class, 'reply'])->name('support.reply');
+
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read_all');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+
+        Route::get('/profile', [JobSeekerProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [JobSeekerProfileController::class, 'update'])->name('profile.update');
+        Route::post('/profile/experience', [JobSeekerProfileController::class, 'storeExperience'])->name('profile.experience.store');
+        Route::delete('/profile/experience/{experience}', [JobSeekerProfileController::class, 'destroyExperience'])->name('profile.experience.destroy');
+        Route::post('/profile/education', [JobSeekerProfileController::class, 'storeEducation'])->name('profile.education.store');
+        Route::delete('/profile/education/{education}', [JobSeekerProfileController::class, 'destroyEducation'])->name('profile.education.destroy');
+
+        Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
+        Route::get('/resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Admin Portal (all staff roles)
 |--------------------------------------------------------------------------
 | Route-level role check is the coarse gate ("are you staff at all").
@@ -107,6 +202,8 @@ Route::middleware([
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        Route::get('/onboarding', [AdminOnboardingController::class, 'index'])->name('onboarding.index');
+
         Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
         Route::get('/students/create', [AdminStudentController::class, 'create'])->name('students.create');
         Route::post('/students', [AdminStudentController::class, 'store'])->name('students.store');
@@ -117,6 +214,91 @@ Route::middleware([
         // The unified Student workspace.
         Route::get('/students/{student}', [StudentWorkspaceController::class, 'show'])->name('students.show');
         Route::patch('/students/{student}/profile', [StudentWorkspaceController::class, 'updateProfile'])->name('students.profile.update');
+
+        /*
+        |----------------------------------------------------------------
+        | Admin Job Seeker Management (Stage 2, Phase B)
+        |----------------------------------------------------------------
+        | List/Create/Edit/Suspend is real. The 360° Workspace (job-seekers.show)
+        | is a TODO placeholder for now — same incremental pattern used
+        | throughout this build — filled in as its own dedicated delivery,
+        | mirroring how the Student Workspace was the largest single piece
+        | of Admin Student Management too.
+        */
+        Route::get('/job-seekers', [AdminJobSeekerController::class, 'index'])->name('job-seekers.index');
+        Route::get('/job-seekers/create', [AdminJobSeekerController::class, 'create'])->name('job-seekers.create');
+        Route::post('/job-seekers', [AdminJobSeekerController::class, 'store'])->name('job-seekers.store');
+        Route::get('/job-seekers/{jobSeeker}/edit', [AdminJobSeekerController::class, 'edit'])->name('job-seekers.edit');
+        Route::patch('/job-seekers/{jobSeeker}', [AdminJobSeekerController::class, 'update'])->name('job-seekers.update');
+        Route::post('/job-seekers/{jobSeeker}/suspend', [AdminJobSeekerController::class, 'suspend'])->name('job-seekers.suspend');
+
+        // The unified Job Seeker 360° workspace.
+        Route::get('/job-seekers/{jobSeeker}', [JobSeekerWorkspaceController::class, 'show'])->name('job-seekers.show');
+        Route::patch('/job-seekers/{jobSeeker}/profile', [JobSeekerWorkspaceController::class, 'updateProfile'])->name('job-seekers.profile.update');
+        Route::post('/job-seekers/{jobSeeker}/experience', [JobSeekerWorkspaceController::class, 'storeExperience'])->name('job-seekers.experience.store');
+        Route::delete('/job-seekers/{jobSeeker}/experience/{experience}', [JobSeekerWorkspaceController::class, 'destroyExperience'])->name('job-seekers.experience.destroy');
+        Route::post('/job-seekers/{jobSeeker}/education', [JobSeekerWorkspaceController::class, 'storeEducation'])->name('job-seekers.education.store');
+        Route::delete('/job-seekers/{jobSeeker}/education/{education}', [JobSeekerWorkspaceController::class, 'destroyEducation'])->name('job-seekers.education.destroy');
+
+        Route::post('/job-seekers/{jobSeeker}/documents/{document}/verify', [JobSeekerWorkspaceController::class, 'verifyDocument'])->name('job-seekers.documents.verify');
+        Route::post('/job-seekers/{jobSeeker}/documents/{document}/reject', [JobSeekerWorkspaceController::class, 'rejectDocument'])->name('job-seekers.documents.reject');
+        Route::post('/job-seekers/{jobSeeker}/documents/request', [JobSeekerWorkspaceController::class, 'requestDocument'])->name('job-seekers.documents.request');
+        Route::post('/job-seekers/{jobSeeker}/documents/{document}/upload', [JobSeekerWorkspaceController::class, 'uploadDocument'])->name('job-seekers.documents.upload');
+        Route::patch('/job-seekers/{jobSeeker}/documents/{document}', [JobSeekerWorkspaceController::class, 'updateDocument'])->name('job-seekers.documents.update');
+        Route::delete('/job-seekers/{jobSeeker}/documents/{document}', [JobSeekerWorkspaceController::class, 'deleteDocument'])->name('job-seekers.documents.destroy');
+        Route::post('/job-seekers/{jobSeeker}/payments/{payment}/confirm', [JobSeekerWorkspaceController::class, 'confirmPayment'])->name('job-seekers.payments.confirm');
+
+        Route::post('/job-seekers/{jobSeeker}/invoices/{invoice}/payments', [AdminJobSeekerFinanceController::class, 'storePayment'])->name('job-seekers.invoices.payments.store');
+        Route::patch('/job-seekers/{jobSeeker}/payments/{payment}', [AdminJobSeekerFinanceController::class, 'updatePayment'])->name('job-seekers.payments.update');
+        Route::post('/job-seekers/{jobSeeker}/payments/{payment}/refund', [AdminJobSeekerFinanceController::class, 'refundPayment'])->name('job-seekers.payments.refund');
+        Route::post('/job-seekers/{jobSeeker}/invoices', [AdminJobSeekerFinanceController::class, 'storeInvoice'])->name('job-seekers.invoices.store');
+        Route::post('/job-seekers/{jobSeeker}/invoices/{invoice}/send', [AdminJobSeekerFinanceController::class, 'sendInvoice'])->name('job-seekers.invoices.send');
+        Route::post('/job-seekers/{jobSeeker}/invoices/{invoice}/cancel', [AdminJobSeekerFinanceController::class, 'cancelInvoice'])->name('job-seekers.invoices.cancel');
+
+        // Applications (+ Interview/Offer/Visa) — Admin\JobSeeker\ApplicationController
+        Route::post('/job-seekers/{jobSeeker}/applications', [AdminJobSeekerApplicationController::class, 'store'])->name('job-seekers.applications.store');
+        Route::delete('/job-seekers/{jobSeeker}/applications/{application}', [AdminJobSeekerApplicationController::class, 'destroy'])->name('job-seekers.applications.destroy');
+        Route::post('/job-seekers/{jobSeeker}/applications/{application}/status', [AdminJobSeekerApplicationController::class, 'changeStatus'])->name('job-seekers.applications.status');
+        Route::post('/job-seekers/{jobSeeker}/applications/{application}/assign-officer', [AdminJobSeekerApplicationController::class, 'assignOfficer'])->name('job-seekers.applications.assign_officer');
+        Route::post('/job-seekers/{jobSeeker}/applications/{application}/interview', [AdminJobSeekerApplicationController::class, 'scheduleInterview'])->name('job-seekers.applications.interview');
+        Route::post('/job-seekers/{jobSeeker}/applications/{application}/offer', [AdminJobSeekerApplicationController::class, 'storeOrUpdateOffer'])->name('job-seekers.applications.offer');
+        Route::post('/job-seekers/{jobSeeker}/applications/{application}/offer/send', [AdminJobSeekerApplicationController::class, 'sendOffer'])->name('job-seekers.applications.offer.send');
+        Route::post('/job-seekers/{jobSeeker}/applications/{application}/visa', [AdminJobSeekerApplicationController::class, 'updateVisa'])->name('job-seekers.applications.visa');
+
+        // Appointments / Messages / Tasks / Notes — Admin\JobSeeker\EngagementController
+        Route::post('/job-seekers/{jobSeeker}/appointments', [AdminJobSeekerEngagementController::class, 'storeAppointment'])->name('job-seekers.appointments.store');
+        Route::patch('/job-seekers/{jobSeeker}/appointments/{appointment}', [AdminJobSeekerEngagementController::class, 'updateAppointment'])->name('job-seekers.appointments.update');
+        Route::post('/job-seekers/{jobSeeker}/appointments/{appointment}/confirm', [AdminJobSeekerEngagementController::class, 'confirmAppointment'])->name('job-seekers.appointments.confirm');
+        Route::post('/job-seekers/{jobSeeker}/appointments/{appointment}/cancel', [AdminJobSeekerEngagementController::class, 'cancelAppointment'])->name('job-seekers.appointments.cancel');
+        Route::post('/job-seekers/{jobSeeker}/appointments/{appointment}/complete', [AdminJobSeekerEngagementController::class, 'completeAppointment'])->name('job-seekers.appointments.complete');
+
+        Route::post('/job-seekers/{jobSeeker}/tickets', [AdminJobSeekerEngagementController::class, 'storeTicket'])->name('job-seekers.tickets.store');
+        Route::post('/job-seekers/{jobSeeker}/tickets/{ticket}/reply', [AdminJobSeekerEngagementController::class, 'replyTicket'])->name('job-seekers.tickets.reply');
+        Route::post('/job-seekers/{jobSeeker}/tickets/{ticket}/status', [AdminJobSeekerEngagementController::class, 'updateTicketStatus'])->name('job-seekers.tickets.status');
+
+        Route::post('/job-seekers/{jobSeeker}/tasks', [AdminJobSeekerEngagementController::class, 'storeTask'])->name('job-seekers.tasks.store');
+        Route::post('/job-seekers/{jobSeeker}/tasks/{task}/complete', [AdminJobSeekerEngagementController::class, 'completeTask'])->name('job-seekers.tasks.complete');
+
+        Route::post('/job-seekers/{jobSeeker}/notes', [AdminJobSeekerEngagementController::class, 'storeNote'])->name('job-seekers.notes.store');
+
+        /*
+        |----------------------------------------------------------------
+        | Job Posting Management (Stage 2, Phase B — final piece)
+        |----------------------------------------------------------------
+        | The catalog Job Seeker's Browse Jobs page and the Applications
+        | tab's "Create Application" dropdown both read from.
+        */
+        Route::get('/job-postings', [AdminJobPostingController::class, 'index'])->name('job-postings.index');
+        Route::get('/job-postings/create', [AdminJobPostingController::class, 'create'])->name('job-postings.create');
+        Route::post('/job-postings', [AdminJobPostingController::class, 'store'])->name('job-postings.store');
+        Route::get('/job-postings/{jobPosting}/edit', [AdminJobPostingController::class, 'edit'])->name('job-postings.edit');
+        Route::patch('/job-postings/{jobPosting}', [AdminJobPostingController::class, 'update'])->name('job-postings.update');
+        Route::post('/job-postings/{jobPosting}/publish', [AdminJobPostingController::class, 'publish'])->name('job-postings.publish');
+        Route::post('/job-postings/{jobPosting}/unpublish', [AdminJobPostingController::class, 'unpublish'])->name('job-postings.unpublish');
+        Route::post('/job-postings/{jobPosting}/close', [AdminJobPostingController::class, 'close'])->name('job-postings.close');
+        Route::post('/job-postings/{jobPosting}/archive', [AdminJobPostingController::class, 'archive'])->name('job-postings.archive');
+        Route::post('/job-postings/{jobPosting}/feature', [AdminJobPostingController::class, 'toggleFeatured'])->name('job-postings.feature');
+        Route::post('/job-postings/{jobPosting}/duplicate', [AdminJobPostingController::class, 'duplicate'])->name('job-postings.duplicate');
 
         // Document preview — admin-scoped, fixes the 403 the student-side download
         // route caused (it sat behind role:student middleware, blocking all staff).

@@ -20,10 +20,12 @@ class DocumentRequestedNotification extends Notification
 
     public function toArray($notifiable): array
     {
+        $routeName = $notifiable->isJobSeeker() ? 'job-seeker.documents.index' : 'student.documents.index';
+
         return [
             'title' => 'Document Required',
             'body' => "Please upload your {$this->document->name}.",
-            'link' => Route::has('student.documents.index') ? route('student.documents.index') : '#',
+            'link' => Route::has($routeName) ? route($routeName) : '#',
             'icon' => 'file-circle-exclamation',
         ];
     }

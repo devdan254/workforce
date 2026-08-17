@@ -21,12 +21,13 @@ class PaymentConfirmedNotification extends Notification
     public function toArray($notifiable): array
     {
         $amount = number_format((float) $this->payment->amount, 2);
+        $routeName = $notifiable->isJobSeeker() ? 'job-seeker.invoices.show' : 'student.invoices.show';
 
         return [
             'title' => 'Payment Confirmed',
             'body' => "Your payment of {$this->payment->currency} {$amount} has been confirmed. Thank you.",
-            'link' => Route::has('student.invoices.show')
-                ? route('student.invoices.show', $this->payment->invoice_id)
+            'link' => Route::has($routeName)
+                ? route($routeName, $this->payment->invoice_id)
                 : '#',
             'icon' => 'circle-dollar',
         ];

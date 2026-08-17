@@ -8,29 +8,30 @@ use App\Models\User;
 class DocumentPolicy
 {
     /**
-     * A student proactively adding a document (not just uploading against
-     * a pre-created "required" row) — no specific Document instance exists
-     * yet, so this checks the actor only, same pattern as StudyApplicationPolicy::create.
+     * A student OR job seeker proactively adding a document (not just
+     * uploading against a pre-created "required" row) — no specific Document
+     * instance exists yet, so this checks the actor only, same pattern as
+     * StudyApplicationPolicy::create.
      */
     public function create(User $user): bool
     {
-        return $user->isStudent();
+        return $user->isStudent() || $user->isJobSeeker();
     }
 
     /**
-     * Admin/staff REQUESTING a document from a student — creates a "required"
-     * row with no file yet, the inverse of create() above. Reuses documents.verify
-     * rather than documents.upload, since anyone who reviews documents is the
-     * natural fit for also requesting one.
+     * Admin/staff REQUESTING a document from a student or job seeker —
+     * creates a "required" row with no file yet, the inverse of create()
+     * above. Reuses documents.verify rather than documents.upload, since
+     * anyone who reviews documents is the natural fit for also requesting one.
      */
     public function request(User $user): bool
     {
-        return $user->can('documents.verify') && ! $user->isStudent();
+        return $user->can('documents.verify') && $user->isStaff();
     }
 
     public function view(User $user, Document $document): bool
     {
-        if ($user->isStudent()) {
+        if ($user->isStudent() || $user->isJobSeeker()) {
             return $document->student_id === $user->id;
         }
 
@@ -38,13 +39,13 @@ class DocumentPolicy
     }
 
     /**
-     * Uploading a FILE onto an existing document row — student uploading
-     * their own, or staff uploading on the student's behalf (e.g. a document
-     * they received by email/in person and are logging into the system).
+     * Uploading a FILE onto an existing document row — the owner uploading
+     * their own, or staff uploading on their behalf (e.g. a document they
+     * received by email/in person and are logging into the system).
      */
     public function upload(User $user, Document $document): bool
     {
-        if ($user->isStudent()) {
+        if ($user->isStudent() || $user->isJobSeeker()) {
             return $document->student_id === $user->id;
         }
 
@@ -58,7 +59,7 @@ class DocumentPolicy
      */
     public function update(User $user, Document $document): bool
     {
-        if ($user->isStudent()) {
+        if ($user->isStudent() || $user->isJobSeeker()) {
             return $document->student_id === $user->id && $document->status !== 'verified';
         }
 
@@ -72,16 +73,16 @@ class DocumentPolicy
      */
     public function delete(User $user, Document $document): bool
     {
-        return $user->can('documents.delete') && ! $user->isStudent();
+        return $user->can('documents.delete') && $user->isStaff();
     }
 
     public function verify(User $user, Document $document): bool
     {
-        return $user->can('documents.verify') && ! $user->isStudent();
+        return $user->can('documents.verify') && $user->isStaff();
     }
 
     public function reject(User $user, Document $document): bool
     {
-        return $user->can('documents.reject') && ! $user->isStudent();
+        return $user->can('documents.reject') && $user->isStaff();
     }
 }

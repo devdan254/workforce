@@ -21,11 +21,19 @@ class StatusChangedNotification extends Notification
     public function toArray($notifiable): array
     {
         $statusable = $this->history->historyable;
-        $typeLabel = $statusable->statusType() === 'visa' ? 'Visa' : 'Application';
+        $isVisa = $statusable->statusType() === 'visa';
+        $typeLabel = $isVisa ? 'Visa' : 'Application';
+        $isJobSeeker = $notifiable->isJobSeeker();
 
-        $link = $statusable->statusType() === 'visa'
-            ? $this->routeOrFallback('student.applications.visa', $statusable->study_application_id)
-            : $this->routeOrFallback('student.applications.show', $statusable->id);
+        if ($isVisa) {
+            $link = $isJobSeeker
+                ? $this->routeOrFallback('job-seeker.applications.visa', $statusable->job_application_id)
+                : $this->routeOrFallback('student.applications.visa', $statusable->study_application_id);
+        } else {
+            $link = $isJobSeeker
+                ? $this->routeOrFallback('job-seeker.applications.show', $statusable->id)
+                : $this->routeOrFallback('student.applications.show', $statusable->id);
+        }
 
         return [
             'title' => "{$typeLabel} Update",
@@ -36,12 +44,11 @@ class StatusChangedNotification extends Notification
     }
 
     /**
-     * Student portal routes don't exist yet (next deliverable). Falls back to '#'
-     * so notifications/events/seeders all work TODAY and pick up the real link
-     * automatically the moment the named route is registered — no code change needed here.
+     * Falls back to '#' so notifications/events/seeders all work even if a
+     * named route isn't registered yet — no code change needed here once it is.
      */
     private function routeOrFallback(string $name, mixed $param): string
     {
-        return Route::has($name) ? route($name, $param) : '#';
+        return Route::has($name) && $param ? route($name, $param) : '#';
     }
 }

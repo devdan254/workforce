@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Resource has no owner column at all — it's a global catalog, not
+ * per-student data. Reused directly by Job Seeker routes (see routes/web.php),
+ * with only the view name made role-aware, since Student and Job Seeker see
+ * different resource content (study-abroad guides vs. job-search guides)
+ * even though the underlying query/download logic is identical.
+ */
 class ResourceController extends Controller
 {
     public function index(Request $request): View
@@ -20,7 +27,9 @@ class ResourceController extends Controller
             ->get()
             ->groupBy('category');
 
-        return view('student.resources.index', ['groupedResources' => $resources]);
+        $view = $request->user()->isJobSeeker() ? 'job-seeker.resources.index' : 'student.resources.index';
+
+        return view($view, ['groupedResources' => $resources]);
     }
 
     public function download(Resource $resource): StreamedResponse

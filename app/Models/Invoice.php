@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Concerns\HasExclusiveApplicationLink;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
+    use HasExclusiveApplicationLink;
+
     protected $fillable = [
-        'student_id', 'study_application_id', 'invoice_number', 'description',
+        'student_id', 'study_application_id', 'job_application_id', 'invoice_number', 'description',
         'currency', 'subtotal', 'tax', 'total', 'amount_paid', 'status', 'due_date', 'sent_at',
     ];
 
@@ -46,9 +49,24 @@ class Invoice extends Model
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /**
+     * Same column as student() — readability alias for Job Seeker contexts.
+     * student_id → users.id was never actually student-specific; it's the
+     * generic person-reference the shared services were built around.
+     */
+    public function jobSeeker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'student_id');
+    }
+
     public function studyApplication(): BelongsTo
     {
         return $this->belongsTo(StudyApplication::class);
+    }
+
+    public function jobApplication(): BelongsTo
+    {
+        return $this->belongsTo(JobApplication::class);
     }
 
     public function items(): HasMany
@@ -70,12 +88,12 @@ class Invoice extends Model
 
     /**
      * The ONE place "Total Cost / Paid / Outstanding" gets computed — used by
-     * both the Dashboard and the Payments page. If this logic ever needs to
-     * change (e.g. excluding cancelled invoices), it changes here once.
+     * both the Student Dashboard and (once built) the Job Seeker Dashboard.
+     * Generic name since student_id holds ANY person, not just students.
      */
-    public static function financialSummaryForStudent(int $studentId): array
+    public static function financialSummaryForPerson(int $personId): array
     {
-        $invoices = static::where('student_id', $studentId)->get();
+        $invoices = static::where('student_id', $personId)->get();
 
         $total = (float) $invoices->sum('total');
         $paid = (float) $invoices->sum('amount_paid');
@@ -86,5 +104,16 @@ class Invoice extends Model
             'balance' => $total - $paid,
             'currency' => $invoices->first()->currency ?? 'KES',
         ];
+    }
+
+    /**
+     * @deprecated in favor of financialSummaryForPerson() — kept as a thin
+     * alias, not removed, so every existing Student controller/view call
+     * site (DashboardController, InvoiceController, PaymentController, the
+     * Admin StudentWorkspaceController, etc.) needs ZERO changes.
+     */
+    public static function financialSummaryForStudent(int $studentId): array
+    {
+        return static::financialSummaryForPerson($studentId);
     }
 }

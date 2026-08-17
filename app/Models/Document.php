@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasExclusiveApplicationLink;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
@@ -9,10 +10,10 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Document extends Model
 {
-    use LogsActivity;
+    use LogsActivity, HasExclusiveApplicationLink;
 
     protected $fillable = [
-        'student_id', 'study_application_id', 'document_category_id', 'name',
+        'student_id', 'study_application_id', 'job_application_id', 'document_category_id', 'name',
         'file_path', 'mime_type', 'size_bytes', 'status', 'uploaded_at',
         'verified_at', 'verified_by', 'rejection_reason', 'verification_notes',
     ];
@@ -34,7 +35,24 @@ class Document extends Model
 
     /* ---------- Relationships ---------- */
 
+    /**
+     * Named student() historically, but this column (student_id → users.id)
+     * is the same person-reference used for Job Seekers too — "student" here
+     * is a relationship method name, not a claim about the row owner's role.
+     * See jobSeeker() below for the identical relationship under a name
+     * that reads naturally in Job Seeker contexts.
+     */
     public function student(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'student_id');
+    }
+
+    /**
+     * Same column as student() — purely a readability alias for code working
+     * with Job Seeker documents, so it doesn't read as "->student->name" for
+     * a candidate who was never a student.
+     */
+    public function jobSeeker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
@@ -42,6 +60,11 @@ class Document extends Model
     public function studyApplication(): BelongsTo
     {
         return $this->belongsTo(StudyApplication::class);
+    }
+
+    public function jobApplication(): BelongsTo
+    {
+        return $this->belongsTo(JobApplication::class);
     }
 
     public function category(): BelongsTo
@@ -56,13 +79,18 @@ class Document extends Model
 
     /* ---------- Query scopes ---------- */
 
-    public function scopeForVault($query, int $studentId)
+    public function scopeForVault($query, int $personId)
     {
-        return $query->where('student_id', $studentId)->whereNull('study_application_id');
+        return $query->where('student_id', $personId)->whereNull('study_application_id')->whereNull('job_application_id');
     }
 
     public function scopeForApplication($query, int $applicationId)
     {
         return $query->where('study_application_id', $applicationId);
+    }
+
+    public function scopeForJobApplication($query, int $jobApplicationId)
+    {
+        return $query->where('job_application_id', $jobApplicationId);
     }
 }

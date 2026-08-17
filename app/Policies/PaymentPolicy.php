@@ -9,7 +9,7 @@ class PaymentPolicy
 {
     public function view(User $user, Payment $payment): bool
     {
-        if ($user->isStudent()) {
+        if ($user->isStudent() || $user->isJobSeeker()) {
             return $payment->student_id === $user->id;
         }
 
@@ -18,9 +18,9 @@ class PaymentPolicy
 
     public function create(User $user): bool
     {
-        // A student recording that they've paid (e.g. submitting an M-Pesa code) is a "create";
-        // staff can also record a payment on a student's behalf.
-        return $user->isStudent() || $user->can('payments.create');
+        // A student/job seeker recording that they've paid (e.g. submitting an M-Pesa code)
+        // is a "create"; staff can also record a payment on their behalf.
+        return $user->isStudent() || $user->isJobSeeker() || $user->can('payments.create');
     }
 
     /**
@@ -31,16 +31,16 @@ class PaymentPolicy
      */
     public function update(User $user, Payment $payment): bool
     {
-        return $user->can('payments.update') && ! $user->isStudent() && $payment->status === 'pending';
+        return $user->can('payments.update') && $user->isStaff() && $payment->status === 'pending';
     }
 
     public function confirm(User $user, Payment $payment): bool
     {
-        return $user->can('payments.confirm') && ! $user->isStudent();
+        return $user->can('payments.confirm') && $user->isStaff();
     }
 
     public function refund(User $user, Payment $payment): bool
     {
-        return $user->can('payments.refund') && ! $user->isStudent();
+        return $user->can('payments.refund') && $user->isStaff();
     }
 }

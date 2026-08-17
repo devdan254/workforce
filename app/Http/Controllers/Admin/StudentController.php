@@ -106,8 +106,12 @@ class StudentController extends Controller
             $student->studentProfile()->create(['country' => $request->string('country')]);
         }
 
+        // Redirects straight into the workspace, not back to the list — Admin
+        // routinely does the full onboarding right after creating the account
+        // (personal info, education, experience, documents), not just the
+        // account itself. See the Onboarding entry point for the guided flow.
         return redirect()
-            ->route('admin.students.index')
+            ->route('admin.students.show', $student)
             ->with('success', "Student created. Temporary password: {$temporaryPassword} (shown once — share it securely).");
     }
 

@@ -20,10 +20,12 @@ class InvoiceSentNotification extends Notification
 
     public function toArray($notifiable): array
     {
+        $routeName = $notifiable->isJobSeeker() ? 'job-seeker.invoices.show' : 'student.invoices.show';
+
         return [
             'title' => 'Invoice Generated',
             'body' => "A new invoice ({$this->invoice->invoice_number}) for {$this->invoice->currency} ".number_format((float) $this->invoice->total, 2).' has been generated.',
-            'link' => Route::has('student.invoices.show') ? route('student.invoices.show', $this->invoice) : '#',
+            'link' => Route::has($routeName) ? route($routeName, $this->invoice) : '#',
             'icon' => 'file-invoice',
         ];
     }

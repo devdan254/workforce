@@ -15,9 +15,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'applications.view', 'applications.create', 'applications.update', 'applications.change_status',
 
-            'documents.view', 'documents.upload', 'documents.verify', 'documents.reject',
+            'documents.view', 'documents.upload', 'documents.verify', 'documents.reject', 'documents.delete',
 
-            'payments.view', 'payments.create', 'payments.confirm', 'payments.refund',
+            'payments.view', 'payments.create', 'payments.update', 'payments.confirm', 'payments.refund',
 
             'invoices.view', 'invoices.create', 'invoices.update', 'invoices.send',
 
@@ -32,6 +32,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'resources.manage',
 
             'activity.view',
+
+            // ---- Stage 2: Job Seeker ----
+            'job_seekers.view', 'job_seekers.create', 'job_seekers.update',
+            'job_applications.view', 'job_applications.create', 'job_applications.update', 'job_applications.change_status',
+            'job_postings.view', 'job_postings.create', 'job_postings.update', 'job_postings.publish',
+            // documents.*, payments.*, invoices.*, appointments.*, tasks.* are ALREADY reused
+            // unmodified for Job Seekers — no job_seekers-scoped variants of these exist,
+            // matching the spec's explicit "do not create a second document/payment/etc system."
         ];
 
         foreach ($permissions as $permission) {
@@ -46,20 +54,24 @@ class RolesAndPermissionsSeeder extends Seeder
         $adminOfficer->syncPermissions([
             'students.view', 'students.create', 'students.update',
             'applications.view', 'applications.create', 'applications.update', 'applications.change_status',
-            'documents.view', 'documents.verify', 'documents.reject',
+            'documents.view', 'documents.upload', 'documents.verify', 'documents.reject', 'documents.delete',
             'invoices.view', 'invoices.create',
             'visa.view', 'visa.update',
             'appointments.view', 'appointments.create', 'appointments.update',
             'tickets.view', 'tickets.respond', 'tickets.close',
             'tasks.view', 'tasks.create', 'tasks.update',
             'resources.manage', 'activity.view',
+            // Stage 2 — Admin Officer manages Job Seekers with the same breadth as Students.
+            'job_seekers.view', 'job_seekers.create', 'job_seekers.update',
+            'job_applications.view', 'job_applications.create', 'job_applications.update', 'job_applications.change_status',
+            'job_postings.view', 'job_postings.create', 'job_postings.update', 'job_postings.publish',
         ]);
 
         $educationOfficer = Role::firstOrCreate(['name' => 'education_officer', 'guard_name' => 'web']);
         $educationOfficer->syncPermissions([
             'students.view',
             'applications.view', 'applications.update', 'applications.change_status',
-            'documents.view', 'documents.verify', 'documents.reject',
+            'documents.view', 'documents.upload', 'documents.verify', 'documents.reject',
             'appointments.view', 'appointments.create', 'appointments.update',
             'tasks.view', 'tasks.update',
         ]);
@@ -69,7 +81,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $financeOfficer = Role::firstOrCreate(['name' => 'finance_officer', 'guard_name' => 'web']);
         $financeOfficer->syncPermissions([
             'students.view',
-            'payments.view', 'payments.create', 'payments.confirm', 'payments.refund',
+            'payments.view', 'payments.create', 'payments.update', 'payments.confirm', 'payments.refund',
             'invoices.view', 'invoices.create', 'invoices.update', 'invoices.send',
             'tasks.view', 'tasks.update',
         ]);
@@ -78,7 +90,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $visaOfficer->syncPermissions([
             'students.view',
             'visa.view', 'visa.update',
-            'documents.view', 'documents.verify', 'documents.reject',
+            'documents.view', 'documents.upload', 'documents.verify', 'documents.reject',
             'appointments.view', 'appointments.create', 'appointments.update',
             'tasks.view', 'tasks.update',
         ]);
@@ -100,8 +112,48 @@ class RolesAndPermissionsSeeder extends Seeder
             'tasks.view',
         ]);
 
+        // ---- Stage 2 roles ----
+
+        // Recruitment Officer: the Job Seeker equivalent of Education Officer —
+        // manages the candidate pipeline (applications, documents, interviews)
+        // but not finance. Reuses the SAME documents.*/appointments.*/tasks.*
+        // permissions Education Officer already uses — no job-seeker-scoped
+        // duplicates, per the spec's explicit reuse mandate.
+        $recruitmentOfficer = Role::firstOrCreate(['name' => 'recruitment_officer', 'guard_name' => 'web']);
+        $recruitmentOfficer->syncPermissions([
+            'job_seekers.view',
+            'job_applications.view', 'job_applications.update', 'job_applications.change_status',
+            'job_postings.view', 'job_postings.create', 'job_postings.update', 'job_postings.publish',
+            'documents.view', 'documents.upload', 'documents.verify', 'documents.reject',
+            'appointments.view', 'appointments.create', 'appointments.update',
+            'tickets.view', 'tickets.respond',
+            'tasks.view', 'tasks.update',
+        ]);
+
+        // HR/Outsourcing Officer: broader Job Seeker oversight, including
+        // finance — the Job Seeker equivalent of Admin Officer's breadth,
+        // scoped to job seekers rather than students.
+        $hrOutsourcingOfficer = Role::firstOrCreate(['name' => 'hr_outsourcing_officer', 'guard_name' => 'web']);
+        $hrOutsourcingOfficer->syncPermissions([
+            'job_seekers.view', 'job_seekers.create', 'job_seekers.update',
+            'job_applications.view', 'job_applications.create', 'job_applications.update', 'job_applications.change_status',
+            'job_postings.view', 'job_postings.create', 'job_postings.update', 'job_postings.publish',
+            'documents.view', 'documents.upload', 'documents.verify', 'documents.reject',
+            'payments.view', 'payments.create', 'payments.confirm',
+            'invoices.view', 'invoices.create', 'invoices.send',
+            'appointments.view', 'appointments.create', 'appointments.update',
+            'tickets.view', 'tickets.respond', 'tickets.close',
+            'tasks.view', 'tasks.create', 'tasks.update',
+        ]);
+
         // Student: no spatie permissions at all — every student capability is
         // ownership-based ("is this my record?"), enforced entirely in the Policies.
         Role::firstOrCreate(['name' => 'student', 'guard_name' => 'web']);
+
+        // Job Seeker: same pattern as Student — zero spatie permissions,
+        // every capability is ownership-based via student_id === $user->id
+        // (see the Policy updates: DocumentPolicy, PaymentPolicy, InvoicePolicy,
+        // AppointmentPolicy, SupportTicketPolicy all check isJobSeeker() now).
+        Role::firstOrCreate(['name' => 'job_seeker', 'guard_name' => 'web']);
     }
 }

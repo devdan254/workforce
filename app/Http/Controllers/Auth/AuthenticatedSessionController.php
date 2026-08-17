@@ -37,13 +37,17 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * ONE place that decides where a freshly-authenticated user lands.
-     * Students → their dashboard. Every staff role (however many roles
-     * Stage 4's RBAC eventually adds) → the admin dashboard.
+     * Students → their dashboard. Job Seekers → theirs. Every staff role →
+     * the admin dashboard.
      */
     private function redirectPathFor($user): string
     {
         if ($user->isStudent()) {
             return route('student.dashboard', absolute: false);
+        }
+
+        if ($user->isJobSeeker()) {
+            return route('job-seeker.dashboard', absolute: false);
         }
 
         return route('admin.dashboard', absolute: false);

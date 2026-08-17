@@ -56,4 +56,46 @@ class UserPolicy
     {
         return $user->can('students.update');
     }
+
+    /* ---------- Job Seeker equivalents ----------
+     * Same User model, different permission prefix — can't reuse
+     * viewAny/create/update above since those are hardcoded to students.*.
+     * Laravel Policies support arbitrary ability names beyond the CRUD
+     * conventions, so these are just as legitimate as the Student ones.
+     */
+
+    public function viewAnyJobSeekers(User $user): bool
+    {
+        return $user->can('job_seekers.view');
+    }
+
+    public function viewJobSeeker(User $user, User $jobSeeker): bool
+    {
+        return $user->can('job_seekers.view');
+    }
+
+    public function createJobSeeker(User $user): bool
+    {
+        return $user->can('job_seekers.create');
+    }
+
+    public function updateJobSeeker(User $user, User $jobSeeker): bool
+    {
+        return $user->can('job_seekers.update');
+    }
+
+    /**
+     * Same reasoning as editProfile() above — any staff member working
+     * with a job seeker should be able to edit their profile details,
+     * not just Admin Officer/HR-Outsourcing Officer.
+     */
+    public function editJobSeekerProfile(User $user, User $jobSeeker): bool
+    {
+        return $user->can('job_seekers.view') && $user->isStaff();
+    }
+
+    public function suspendJobSeeker(User $user, User $jobSeeker): bool
+    {
+        return $user->can('job_seekers.update');
+    }
 }

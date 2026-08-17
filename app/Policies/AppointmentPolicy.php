@@ -9,7 +9,7 @@ class AppointmentPolicy
 {
     public function view(User $user, Appointment $appointment): bool
     {
-        if ($user->isStudent()) {
+        if ($user->isStudent() || $user->isJobSeeker()) {
             return $appointment->student_id === $user->id;
         }
 
@@ -19,13 +19,13 @@ class AppointmentPolicy
 
     public function create(User $user): bool
     {
-        return $user->isStudent() || $user->can('appointments.create');
+        return $user->isStudent() || $user->isJobSeeker() || $user->can('appointments.create');
     }
 
     public function update(User $user, Appointment $appointment): bool
     {
-        if ($user->isStudent()) {
-            // Students may reschedule/cancel their own upcoming appointments only.
+        if ($user->isStudent() || $user->isJobSeeker()) {
+            // Owners may reschedule/cancel their own upcoming appointments only.
             return $appointment->student_id === $user->id && $appointment->status !== 'completed';
         }
 

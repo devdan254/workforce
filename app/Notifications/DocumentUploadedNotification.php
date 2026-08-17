@@ -20,11 +20,14 @@ class DocumentUploadedNotification extends Notification
 
     public function toArray($notifiable): array
     {
+        $isJobSeeker = $this->document->student?->isJobSeeker() ?? false;
+        $routeName = $isJobSeeker ? 'admin.job-seekers.show' : 'admin.students.show';
+
         return [
             'title' => 'Document Uploaded',
             'body' => "{$this->document->student->name} uploaded \"{$this->document->name}\" — awaiting your review.",
-            'link' => Route::has('admin.students.documents')
-                ? route('admin.students.documents', $this->document->student_id)
+            'link' => Route::has($routeName)
+                ? route($routeName, $this->document->student_id)
                 : '#',
             'icon' => 'file-arrow-up',
         ];

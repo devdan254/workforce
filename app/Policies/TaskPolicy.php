@@ -8,16 +8,17 @@ use App\Models\User;
 class TaskPolicy
 {
     /**
-     * Tasks are staff-internal (assigning work between officers) — students never see these.
+     * Tasks are staff-internal (assigning work between officers) — students
+     * and job seekers never see these.
      */
     public function viewAny(User $user): bool
     {
-        return ! $user->isStudent();
+        return $user->isStaff();
     }
 
     public function view(User $user, Task $task): bool
     {
-        if ($user->isStudent()) {
+        if (! $user->isStaff()) {
             return false;
         }
 
@@ -33,7 +34,7 @@ class TaskPolicy
 
     public function update(User $user, Task $task): bool
     {
-        if ($user->isStudent()) {
+        if (! $user->isStaff()) {
             return false;
         }
 
