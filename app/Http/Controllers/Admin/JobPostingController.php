@@ -49,6 +49,32 @@ class JobPostingController extends Controller
         ]);
     }
 
+    /**
+     * The gap this fixes: clicking a posting previously went straight to
+     * Edit, with no way to see who'd actually applied. Admin can already
+     * see this per-candidate inside each Job Seeker's own Workspace
+     * Applications tab, but there was no reverse view — "for THIS job,
+     * who applied" — which is exactly what monitoring a posting needs.
+     * "View" (this) and "Edit" (the existing form) are now two distinct
+     * actions from the index list, not one conflated button.
+     */
+    public function show(JobPosting $jobPosting): View
+    {
+        $this->authorize('viewAny', JobPosting::class);
+
+        $jobPosting->load('category');
+
+        $applications = $jobPosting->applications()
+            ->with(['jobSeeker.jobSeekerProfile', 'currentStatus'])
+            ->latest('applied_at')
+            ->get();
+
+        return view('admin.job-postings.show', [
+            'posting' => $jobPosting,
+            'applications' => $applications,
+        ]);
+    }
+
     public function create(): View
     {
         $this->authorize('create', JobPosting::class);
