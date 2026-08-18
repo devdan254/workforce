@@ -81,7 +81,30 @@ class User extends Authenticatable
         return $this->hasMany(JobApplication::class, 'assigned_officer_id');
     }
 
-    /* ---------- Relationships (shared — student_id column serves both) ---------- */
+    /* ---------- Relationships (Employer) ---------- */
+
+    public function employerProfile(): HasOne
+    {
+        return $this->hasOne(EmployerProfile::class);
+    }
+
+    /**
+     * Job postings this employer's hiring requests resulted in — an
+     * employer never creates these directly (Admin/Altura does, per the
+     * spec's core business rule), but they belong to this employer once
+     * Altura links them.
+     */
+    public function jobPostings(): HasMany
+    {
+        return $this->hasMany(JobPosting::class, 'employer_id');
+    }
+
+    public function workerRequests(): HasMany
+    {
+        return $this->hasMany(WorkerRequest::class, 'employer_id');
+    }
+
+    /* ---------- Relationships (shared — student_id column serves all three) ---------- */
 
     public function documents(): HasMany
     {
@@ -130,8 +153,13 @@ class User extends Authenticatable
         return $this->hasRole('job_seeker');
     }
 
+    public function isEmployer(): bool
+    {
+        return $this->hasRole('employer');
+    }
+
     public function isStaff(): bool
     {
-        return ! $this->isStudent() && ! $this->isJobSeeker();
+        return ! $this->isStudent() && ! $this->isJobSeeker() && ! $this->isEmployer();
     }
 }

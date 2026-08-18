@@ -6,9 +6,10 @@ use App\Models\JobOffer;
 use App\Models\User;
 
 /**
- * JobOffer has no direct job_seeker_id column — ownership is checked
- * transitively through jobApplication.job_seeker_id, same pattern as
- * checking a Payment's owner through its parent Invoice.
+ * JobOffer has no direct job_seeker_id OR employer_id column — ownership
+ * is checked transitively through jobApplication for the candidate, and
+ * through jobApplication.jobPosting.employer_id for the employer, same
+ * pattern as checking a Payment's owner through its parent Invoice.
  */
 class JobOfferPolicy
 {
@@ -16,6 +17,10 @@ class JobOfferPolicy
     {
         if ($user->isJobSeeker()) {
             return $offer->jobApplication->job_seeker_id === $user->id;
+        }
+
+        if ($user->isEmployer()) {
+            return $offer->jobApplication->jobPosting->employer_id === $user->id;
         }
 
         return $user->can('job_applications.view');

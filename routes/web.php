@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
+use App\Http\Controllers\Admin\WorkerRequestController as AdminWorkerRequestController;
 use App\Http\Controllers\Admin\OnboardingController as AdminOnboardingController;
 use App\Http\Controllers\Admin\Student\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Admin\Student\EngagementController as AdminEngagementController;
@@ -25,6 +26,19 @@ use App\Http\Controllers\JobSeeker\PaymentController as JobSeekerPaymentControll
 use App\Http\Controllers\JobSeeker\ProfileController as JobSeekerProfileController;
 use App\Http\Controllers\JobSeeker\SupportTicketController as JobSeekerSupportTicketController;
 use App\Http\Controllers\JobSeeker\VisaController as JobSeekerVisaController;
+use App\Http\Controllers\Employer\CandidateController as EmployerCandidateController;
+use App\Http\Controllers\Employer\DashboardController as EmployerDashboardController;
+use App\Http\Controllers\Employer\DocumentController as EmployerDocumentController;
+use App\Http\Controllers\Employer\InvoiceController as EmployerInvoiceController;
+use App\Http\Controllers\Employer\AppointmentController as EmployerAppointmentController;
+use App\Http\Controllers\Employer\JobController as EmployerJobController;
+use App\Http\Controllers\Employer\PaymentController as EmployerPaymentController;
+use App\Http\Controllers\Employer\OfferController as EmployerOfferController;
+use App\Http\Controllers\Employer\WorkerController as EmployerWorkerController;
+use App\Http\Controllers\Employer\InterviewController as EmployerInterviewController;
+use App\Http\Controllers\Employer\ProfileController as EmployerProfileController;
+use App\Http\Controllers\Employer\SupportTicketController as EmployerSupportTicketController;
+use App\Http\Controllers\Employer\WorkerRequestController as EmployerWorkerRequestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\ApplicationController;
 use App\Http\Controllers\Student\AppointmentController;
@@ -186,6 +200,64 @@ Route::middleware(['auth', 'verified', 'role:job_seeker'])
 
 /*
 |--------------------------------------------------------------------------
+| Employer Portal (Stage 3)
+|--------------------------------------------------------------------------
+| Only Dashboard and Company Profile are real this delivery — the rest are
+| TODO placeholders so the layout's sidebar links resolve without error,
+| matching exactly the same incremental pattern used throughout Stage 2.
+| Each placeholder gets replaced with a real controller action in its own
+| dedicated delivery, per the spec's build order (Worker Requests next).
+*/
+Route::middleware(['auth', 'verified', 'role:employer'])
+    ->prefix('employer')
+    ->name('employer.')
+    ->group(function () {
+        Route::get('/dashboard', [EmployerDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/profile', [EmployerProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [EmployerProfileController::class, 'update'])->name('profile.update');
+
+        Route::get('/worker-requests', [EmployerWorkerRequestController::class, 'index'])->name('worker-requests.index');
+        Route::get('/worker-requests/create', [EmployerWorkerRequestController::class, 'create'])->name('worker-requests.create');
+        Route::post('/worker-requests', [EmployerWorkerRequestController::class, 'store'])->name('worker-requests.store');
+        Route::get('/worker-requests/{workerRequest}', [EmployerWorkerRequestController::class, 'show'])->name('worker-requests.show');
+        Route::post('/worker-requests/{workerRequest}/respond', [EmployerWorkerRequestController::class, 'respond'])->name('worker-requests.respond');
+
+        Route::get('/jobs', [EmployerJobController::class, 'index'])->name('jobs.index');
+        Route::get('/jobs/{jobPosting}', [EmployerJobController::class, 'show'])->name('jobs.show');
+        Route::get('/candidates', [EmployerCandidateController::class, 'index'])->name('candidates.index');
+        Route::get('/candidates/{application}', [EmployerCandidateController::class, 'show'])->name('candidates.show');
+        Route::get('/interviews', [EmployerInterviewController::class, 'index'])->name('interviews.index');
+        Route::get('/offers', [EmployerOfferController::class, 'index'])->name('offers.index');
+        Route::get('/offers/{offer}', [EmployerOfferController::class, 'show'])->name('offers.show');
+        Route::get('/workers', [EmployerWorkerController::class, 'index'])->name('workers.index');
+        Route::get('/documents', [EmployerDocumentController::class, 'index'])->name('documents.index');
+        Route::post('/documents', [EmployerDocumentController::class, 'store'])->name('documents.store');
+        Route::post('/documents/{document}/upload', [EmployerDocumentController::class, 'upload'])->name('documents.upload');
+        Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+        Route::get('/payments', [EmployerPaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/{payment}/receipt', [EmployerPaymentController::class, 'receipt'])->name('payments.receipt');
+
+        Route::get('/invoices', [EmployerInvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('/invoices/{invoice}', [EmployerInvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('/invoices/{invoice}/download', [EmployerInvoiceController::class, 'downloadPdf'])->name('invoices.download');
+        Route::post('/invoices/{invoice}/payments', [EmployerPaymentController::class, 'store'])->name('invoices.payments.store');
+        Route::get('/appointments', [EmployerAppointmentController::class, 'index'])->name('appointments.index');
+        Route::get('/support', [EmployerSupportTicketController::class, 'index'])->name('support.index');
+        Route::get('/support/create', [EmployerSupportTicketController::class, 'create'])->name('support.create');
+        Route::post('/support', [EmployerSupportTicketController::class, 'store'])->name('support.store');
+        Route::get('/support/{ticket}', [EmployerSupportTicketController::class, 'show'])->name('support.show');
+        Route::post('/support/{ticket}/reply', [EmployerSupportTicketController::class, 'reply'])->name('support.reply');
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read_all');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+
+        Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
+        Route::get('/resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Admin Portal (all staff roles)
 |--------------------------------------------------------------------------
 | Route-level role check is the coarse gate ("are you staff at all").
@@ -299,6 +371,20 @@ Route::middleware([
         Route::post('/job-postings/{jobPosting}/archive', [AdminJobPostingController::class, 'archive'])->name('job-postings.archive');
         Route::post('/job-postings/{jobPosting}/feature', [AdminJobPostingController::class, 'toggleFeatured'])->name('job-postings.feature');
         Route::post('/job-postings/{jobPosting}/duplicate', [AdminJobPostingController::class, 'duplicate'])->name('job-postings.duplicate');
+
+        /*
+        |----------------------------------------------------------------
+        | Admin Worker Request Review (Stage 3)
+        |----------------------------------------------------------------
+        | The Altura Review step of Employer → Worker Request → Altura →
+        | Official Job Posting. convertToJobPosting() hands off to the
+        | EXISTING JobPostingController for everything after the draft
+        | is created — no duplicated posting logic here.
+        */
+        Route::get('/worker-requests', [AdminWorkerRequestController::class, 'index'])->name('worker-requests.index');
+        Route::get('/worker-requests/{workerRequest}', [AdminWorkerRequestController::class, 'show'])->name('worker-requests.show');
+        Route::post('/worker-requests/{workerRequest}/review', [AdminWorkerRequestController::class, 'review'])->name('worker-requests.review');
+        Route::post('/worker-requests/{workerRequest}/convert', [AdminWorkerRequestController::class, 'convertToJobPosting'])->name('worker-requests.convert');
 
         // Document preview — admin-scoped, fixes the 403 the student-side download
         // route caused (it sat behind role:student middleware, blocking all staff).

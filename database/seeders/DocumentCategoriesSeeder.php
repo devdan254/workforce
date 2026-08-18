@@ -20,6 +20,12 @@ class DocumentCategoriesSeeder extends Seeder
             // already shared/reused as-is; only these two are genuinely new.
             'Employment Documents',
             'Employer Documents',
+            // Stage 3 — Employer's own vault categories, matching the spec's
+            // exact naming (Section 18): Company Documents (registration
+            // certificate, business license) and Recruitment Documents
+            // (job requirements, employment contracts, offer letters).
+            'Company Documents',
+            'Recruitment Documents',
         ];
 
         foreach ($categories as $name) {

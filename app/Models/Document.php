@@ -13,7 +13,7 @@ class Document extends Model
     use LogsActivity, HasExclusiveApplicationLink;
 
     protected $fillable = [
-        'student_id', 'study_application_id', 'job_application_id', 'document_category_id', 'name',
+        'student_id', 'study_application_id', 'job_application_id', 'job_posting_id', 'document_category_id', 'name',
         'file_path', 'mime_type', 'size_bytes', 'status', 'uploaded_at',
         'verified_at', 'verified_by', 'rejection_reason', 'verification_notes',
     ];
@@ -37,10 +37,10 @@ class Document extends Model
 
     /**
      * Named student() historically, but this column (student_id → users.id)
-     * is the same person-reference used for Job Seekers too — "student" here
-     * is a relationship method name, not a claim about the row owner's role.
-     * See jobSeeker() below for the identical relationship under a name
-     * that reads naturally in Job Seeker contexts.
+     * is the same person-reference used for Job Seekers and Employers too —
+     * "student" here is a relationship method name, not a claim about the
+     * row owner's role. See jobSeeker() below for the identical relationship
+     * under a name that reads naturally in Job Seeker contexts.
      */
     public function student(): BelongsTo
     {
@@ -57,6 +57,15 @@ class Document extends Model
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /**
+     * Same column as student()/jobSeeker() — readability alias for Employer
+     * document contexts.
+     */
+    public function employer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'student_id');
+    }
+
     public function studyApplication(): BelongsTo
     {
         return $this->belongsTo(StudyApplication::class);
@@ -65,6 +74,17 @@ class Document extends Model
     public function jobApplication(): BelongsTo
     {
         return $this->belongsTo(JobApplication::class);
+    }
+
+    /**
+     * Tags an EMPLOYER's own document as relating to a specific job posting
+     * (e.g. "Employment Contract for the Nurse role") — independent of
+     * study_application_id/job_application_id, which describe a CANDIDATE's
+     * application-specific documents, not the employer's.
+     */
+    public function jobPosting(): BelongsTo
+    {
+        return $this->belongsTo(JobPosting::class);
     }
 
     public function category(): BelongsTo

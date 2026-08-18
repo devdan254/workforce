@@ -5,12 +5,24 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\VisaApplication;
 
+/**
+ * Handles BOTH Student and Job Seeker visas — a VisaApplication links to
+ * exactly one of studyApplication/jobApplication (enforced by
+ * HasExclusiveApplicationLink), never both. Checking $visa->studyApplication
+ * unconditionally would throw a null-pointer error for a Job Seeker's visa,
+ * since that relationship is null in that case — this was a real bug caught
+ * while building Job Seeker's Applications tab, not a hypothetical one.
+ */
 class VisaApplicationPolicy
 {
     public function view(User $user, VisaApplication $visa): bool
     {
         if ($user->isStudent()) {
-            return $visa->studyApplication->student_id === $user->id;
+            return $visa->studyApplication?->student_id === $user->id;
+        }
+
+        if ($user->isJobSeeker()) {
+            return $visa->jobApplication?->job_seeker_id === $user->id;
         }
 
         return $user->can('visa.view');
@@ -18,14 +30,16 @@ class VisaApplicationPolicy
 
     public function update(User $user, VisaApplication $visa): bool
     {
-        if (! $user->can('visa.update') || $user->isStudent()) {
+        if (! $user->can('visa.update') || $user->isStudent() || $user->isJobSeeker()) {
             return false;
         }
 
-        if ($user->hasAnyRole(['super_admin', 'admin_officer', 'visa_officer'])) {
+        if ($user->hasAnyRole(['super_admin', 'admin_officer', 'hr_outsourcing_officer', 'visa_officer'])) {
             return true;
         }
 
-        return $visa->studyApplication->assigned_officer_id === $user->id;
+        $assignedOfficerId = $visa->studyApplication?->assigned_officer_id ?? $visa->jobApplication?->assigned_officer_id;
+
+        return $assignedOfficerId === $user->id;
     }
 }

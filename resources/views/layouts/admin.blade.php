@@ -23,6 +23,9 @@
                 <a class="nav-link {{ request()->routeIs('admin.job-postings.*') ? 'active' : '' }}" href="{{ route('admin.job-postings.index') }}">
                     <i class="fa-solid fa-list-check"></i>Job Postings
                 </a>
+                <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}">
+                    <i class="fa-solid fa-people-arrows"></i>Worker Requests
+                </a>
                 {{-- Remaining Admin sections (Tickets queue, Tasks, Resources management, etc.)
                      land here as later deliverables build them out. --}}
             </nav>
@@ -87,6 +90,7 @@
                 <a class="nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" href="{{ route('admin.students.index') }}"><i class="fa-solid fa-users"></i>Students</a>
                 <a class="nav-link {{ request()->routeIs('admin.job-seekers.*') ? 'active' : '' }}" href="{{ route('admin.job-seekers.index') }}"><i class="fa-solid fa-briefcase"></i>Job Seekers</a>
                 <a class="nav-link {{ request()->routeIs('admin.job-postings.*') ? 'active' : '' }}" href="{{ route('admin.job-postings.index') }}"><i class="fa-solid fa-list-check"></i>Job Postings</a>
+                <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}"><i class="fa-solid fa-people-arrows"></i>Worker Requests</a>
             </nav>
         </div>
     </div>

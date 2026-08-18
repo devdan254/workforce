@@ -8,21 +8,22 @@ use App\Models\User;
 class DocumentPolicy
 {
     /**
-     * A student OR job seeker proactively adding a document (not just
-     * uploading against a pre-created "required" row) — no specific Document
-     * instance exists yet, so this checks the actor only, same pattern as
-     * StudyApplicationPolicy::create.
+     * A student, job seeker, OR employer proactively adding a document (not
+     * just uploading against a pre-created "required" row) — no specific
+     * Document instance exists yet, so this checks the actor only, same
+     * pattern as StudyApplicationPolicy::create.
      */
     public function create(User $user): bool
     {
-        return $user->isStudent() || $user->isJobSeeker();
+        return $user->isStudent() || $user->isJobSeeker() || $user->isEmployer();
     }
 
     /**
-     * Admin/staff REQUESTING a document from a student or job seeker —
-     * creates a "required" row with no file yet, the inverse of create()
-     * above. Reuses documents.verify rather than documents.upload, since
-     * anyone who reviews documents is the natural fit for also requesting one.
+     * Admin/staff REQUESTING a document from a student, job seeker, or
+     * employer — creates a "required" row with no file yet, the inverse of
+     * create() above. Reuses documents.verify rather than documents.upload,
+     * since anyone who reviews documents is the natural fit for also
+     * requesting one.
      */
     public function request(User $user): bool
     {
@@ -31,7 +32,7 @@ class DocumentPolicy
 
     public function view(User $user, Document $document): bool
     {
-        if ($user->isStudent() || $user->isJobSeeker()) {
+        if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {
             return $document->student_id === $user->id;
         }
 
@@ -45,7 +46,7 @@ class DocumentPolicy
      */
     public function upload(User $user, Document $document): bool
     {
-        if ($user->isStudent() || $user->isJobSeeker()) {
+        if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {
             return $document->student_id === $user->id;
         }
 
@@ -59,7 +60,7 @@ class DocumentPolicy
      */
     public function update(User $user, Document $document): bool
     {
-        if ($user->isStudent() || $user->isJobSeeker()) {
+        if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {
             return $document->student_id === $user->id && $document->status !== 'verified';
         }
 

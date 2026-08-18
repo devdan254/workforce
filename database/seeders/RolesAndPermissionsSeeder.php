@@ -40,6 +40,15 @@ class RolesAndPermissionsSeeder extends Seeder
             // documents.*, payments.*, invoices.*, appointments.*, tasks.* are ALREADY reused
             // unmodified for Job Seekers — no job_seekers-scoped variants of these exist,
             // matching the spec's explicit "do not create a second document/payment/etc system."
+
+            // ---- Stage 3: Employer ----
+            'employers.view', 'employers.create', 'employers.update',
+            'worker_requests.view', 'worker_requests.create', 'worker_requests.update', 'worker_requests.review',
+            // documents.*/payments.*/invoices.*/appointments.*/tickets.*/tasks.* reused unmodified
+            // again — same reasoning as Job Seeker. Candidate-visibility/interview/offer
+            // permission names for Employer's OWN portal come later, once those features
+            // exist to gate — seeding them speculatively now risks names that don't match
+            // the eventual UI.
         ];
 
         foreach ($permissions as $permission) {
@@ -65,6 +74,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'job_seekers.view', 'job_seekers.create', 'job_seekers.update',
             'job_applications.view', 'job_applications.create', 'job_applications.update', 'job_applications.change_status',
             'job_postings.view', 'job_postings.create', 'job_postings.update', 'job_postings.publish',
+            // Stage 3 — Admin Officer manages Employers with the same breadth.
+            'employers.view', 'employers.create', 'employers.update',
+            'worker_requests.view', 'worker_requests.create', 'worker_requests.update', 'worker_requests.review',
         ]);
 
         $educationOfficer = Role::firstOrCreate(['name' => 'education_officer', 'guard_name' => 'web']);
@@ -155,5 +167,16 @@ class RolesAndPermissionsSeeder extends Seeder
         // (see the Policy updates: DocumentPolicy, PaymentPolicy, InvoicePolicy,
         // AppointmentPolicy, SupportTicketPolicy all check isJobSeeker() now).
         Role::firstOrCreate(['name' => 'job_seeker', 'guard_name' => 'web']);
+
+        // Employer: same pattern as Student/Job Seeker — zero role-level spatie
+        // permissions. Ownership-based access to their own documents/payments/
+        // invoices/appointments/tickets works identically (Policies already
+        // check isEmployer() alongside isStudent()/isJobSeeker() — see the
+        // Policy updates in this same delivery). Per-employer permission
+        // VARIATION (some employers can approve candidates, others can't) is
+        // granted directly to individual employer User accounts via Spatie's
+        // direct permission assignment, NOT via this role — that's a later
+        // phase once Candidates/Documents exist to gate.
+        Role::firstOrCreate(['name' => 'employer', 'guard_name' => 'web']);
     }
 }

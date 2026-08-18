@@ -37,8 +37,8 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * ONE place that decides where a freshly-authenticated user lands.
-     * Students → their dashboard. Job Seekers → theirs. Every staff role →
-     * the admin dashboard.
+     * Students → their dashboard. Job Seekers → theirs. Employers → theirs.
+     * Every staff role → the admin dashboard.
      */
     private function redirectPathFor($user): string
     {
@@ -48,6 +48,10 @@ class AuthenticatedSessionController extends Controller
 
         if ($user->isJobSeeker()) {
             return route('job-seeker.dashboard', absolute: false);
+        }
+
+        if ($user->isEmployer()) {
+            return route('employer.dashboard', absolute: false);
         }
 
         return route('admin.dashboard', absolute: false);

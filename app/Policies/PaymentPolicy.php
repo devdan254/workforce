@@ -9,7 +9,7 @@ class PaymentPolicy
 {
     public function view(User $user, Payment $payment): bool
     {
-        if ($user->isStudent() || $user->isJobSeeker()) {
+        if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {
             return $payment->student_id === $user->id;
         }
 
@@ -18,9 +18,9 @@ class PaymentPolicy
 
     public function create(User $user): bool
     {
-        // A student/job seeker recording that they've paid (e.g. submitting an M-Pesa code)
-        // is a "create"; staff can also record a payment on their behalf.
-        return $user->isStudent() || $user->isJobSeeker() || $user->can('payments.create');
+        // A student/job seeker/employer recording that they've paid (e.g. submitting
+        // an M-Pesa code) is a "create"; staff can also record a payment on their behalf.
+        return $user->isStudent() || $user->isJobSeeker() || $user->isEmployer() || $user->can('payments.create');
     }
 
     /**

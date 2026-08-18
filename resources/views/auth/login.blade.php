@@ -44,9 +44,9 @@
 
         <p class="text-center small text-secondary mb-0">
             Don't have an account?
-            <a href="{{ route('register') }}">Register as a Student</a>
-            or
-            <a href="{{ route('register', ['as' => 'job_seeker']) }}">Job Seeker</a>
+            <a href="{{ route('register') }}">Register as a Student</a>,
+            <a href="{{ route('register', ['as' => 'job_seeker']) }}">Job Seeker</a>,
+            or <a href="{{ route('register', ['as' => 'employer']) }}">Employer</a>
         </p>
     </form>
 

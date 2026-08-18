@@ -11,10 +11,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Resource has no owner column at all — it's a global catalog, not
- * per-student data. Reused directly by Job Seeker routes (see routes/web.php),
- * with only the view name made role-aware, since Student and Job Seeker see
- * different resource content (study-abroad guides vs. job-search guides)
- * even though the underlying query/download logic is identical.
+ * per-student data. Reused directly by Job Seeker and Employer routes
+ * (see routes/web.php), with only the view name role-aware, since each
+ * portal sees different resource content (study-abroad guides vs.
+ * job-search guides vs. employer/hiring guides) even though the
+ * underlying query/download logic is identical.
  */
 class ResourceController extends Controller
 {
@@ -27,7 +28,11 @@ class ResourceController extends Controller
             ->get()
             ->groupBy('category');
 
-        $view = $request->user()->isJobSeeker() ? 'job-seeker.resources.index' : 'student.resources.index';
+        $view = match (true) {
+            $request->user()->isJobSeeker() => 'job-seeker.resources.index',
+            $request->user()->isEmployer() => 'employer.resources.index',
+            default => 'student.resources.index',
+        };
 
         return view($view, ['groupedResources' => $resources]);
     }

@@ -9,7 +9,7 @@ class InvoicePolicy
 {
     public function view(User $user, Invoice $invoice): bool
     {
-        if ($user->isStudent() || $user->isJobSeeker()) {
+        if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {
             return $invoice->student_id === $user->id;
         }
 
@@ -38,7 +38,7 @@ class InvoicePolicy
 
     public function pay(User $user, Invoice $invoice): bool
     {
-        // Only the owning student or job seeker initiates payment.
-        return ($user->isStudent() || $user->isJobSeeker()) && $invoice->student_id === $user->id;
+        // Only the owning student, job seeker, or employer initiates payment.
+        return ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) && $invoice->student_id === $user->id;
     }
 }
