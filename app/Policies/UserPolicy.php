@@ -98,4 +98,41 @@ class UserPolicy
     {
         return $user->can('job_seekers.update');
     }
+
+    /* ---------- Employer equivalents ---------- */
+
+    public function viewAnyEmployers(User $user): bool
+    {
+        return $user->can('employers.view');
+    }
+
+    public function viewEmployer(User $user, User $employer): bool
+    {
+        return $user->can('employers.view');
+    }
+
+    public function createEmployer(User $user): bool
+    {
+        return $user->can('employers.create');
+    }
+
+    public function updateEmployer(User $user, User $employer): bool
+    {
+        return $user->can('employers.update');
+    }
+
+    /**
+     * Same reasoning as editProfile()/editJobSeekerProfile() above — any
+     * staff member working with an employer should be able to edit their
+     * company profile details, not just Admin Officer.
+     */
+    public function editEmployerProfile(User $user, User $employer): bool
+    {
+        return $user->can('employers.view') && $user->isStaff();
+    }
+
+    public function suspendEmployer(User $user, User $employer): bool
+    {
+        return $user->can('employers.update');
+    }
 }

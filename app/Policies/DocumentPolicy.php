@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Document;
+use App\Models\JobApplication;
 use App\Models\User;
 
 class DocumentPolicy
@@ -30,10 +31,35 @@ class DocumentPolicy
         return $user->can('documents.verify') && $user->isStaff();
     }
 
+    /**
+     * Employer has TWO distinct paths here, not one:
+     *   1. Their own company documents — always allowed, same as before.
+     *   2. A CANDIDATE's document — only when Admin has explicitly granted
+     *      employer_documents.view_candidate (per-user, via Spatie's direct
+     *      permission assignment, not the shared employer role — different
+     *      employers can have different access) AND that candidate
+     *      genuinely applied to one of this employer's own postings.
+     *      Restricted by default; this is the permission-grant mechanism
+     *      the Candidates/Documents tabs have been waiting on.
+     */
     public function view(User $user, Document $document): bool
     {
-        if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {
+        if ($user->isStudent() || $user->isJobSeeker()) {
             return $document->student_id === $user->id;
+        }
+
+        if ($user->isEmployer()) {
+            if ($document->student_id === $user->id) {
+                return true;
+            }
+
+            if (! $user->can('employer_documents.view_candidate')) {
+                return false;
+            }
+
+            return JobApplication::where('job_seeker_id', $document->student_id)
+                ->whereHas('jobPosting', fn ($q) => $q->where('employer_id', $user->id))
+                ->exists();
         }
 
         return $user->can('documents.view');

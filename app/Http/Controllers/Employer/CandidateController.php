@@ -8,11 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Deliberately scoped to visibility only this delivery — Documents always
- * shows the spec's own restricted-access message, since the Admin-side
- * per-employer permission grant that would unlock them doesn't exist yet.
- * That's its own clean next step, not something to fake here.
- *
  * "Shortlisted Candidates" from the spec is deliberately NOT a separate
  * page/controller — it's the exact same data as Candidates, just filtered.
  * A dedicated route (?filter=shortlisted) reuses this index() entirely
@@ -21,6 +16,11 @@ use Illuminate\View\View;
  * job_posting_id is a second, combinable filter dimension — an employer
  * with several open roles needs to narrow to "candidates for THIS job",
  * independent of (and stackable with) the status filter.
+ *
+ * Documents are now conditionally loaded — only when Admin has granted
+ * employer_documents.view_candidate (DocumentPolicy::view() enforces this
+ * independently regardless of what this controller decides to load, so
+ * there's no way to bypass it even if this check were somehow skipped).
  */
 class CandidateController extends Controller
 {
@@ -71,6 +71,16 @@ class CandidateController extends Controller
             'statusHistories.toStatus',
         ]);
 
-        return view('employer.candidates.show', ['application' => $application]);
+        $canViewDocuments = auth()->user()->can('employer_documents.view_candidate');
+
+        $documents = $canViewDocuments
+            ? $application->jobSeeker->documents()->with('category')->get()
+            : collect();
+
+        return view('employer.candidates.show', [
+            'application' => $application,
+            'canViewDocuments' => $canViewDocuments,
+            'documents' => $documents,
+        ]);
     }
 }

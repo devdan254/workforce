@@ -94,6 +94,8 @@
                             </td>
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-1 flex-wrap">
+                                    <a href="{{ route('admin.job-postings.show', $posting) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{{ route('admin.job-postings.applicants', $posting) }}" class="btn btn-sm btn-outline-primary">View Applicants ({{ $posting->applications_count }})</a>
                                     <a href="{{ route('admin.job-postings.edit', $posting) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
 
                                     @can('publish', $posting)

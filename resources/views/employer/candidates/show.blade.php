@@ -63,9 +63,27 @@
 
             <div class="card stat-card p-4">
                 <h3 class="h6 fw-semibold mb-3" style="font-family:'Poppins',sans-serif;">Documents</h3>
-                <div class="alert alert-secondary small mb-0">
-                    <i class="fa-solid fa-lock"></i> Candidate documents are currently restricted. Contact Altura for access.
-                </div>
+                @if($canViewDocuments)
+                    @forelse($documents as $document)
+                        <div class="d-flex justify-content-between align-items-center py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
+                            <div>
+                                <span class="fw-semibold small">{{ $document->name }}</span>
+                                <span class="text-secondary small">· {{ $document->category->name ?? '' }}</span>
+                            </div>
+                            @if($document->status === 'verified' && $document->file_path)
+                                <a href="{{ route('employer.candidate-documents.download', $document) }}" class="btn btn-sm btn-outline-primary">Download</a>
+                            @else
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis">Not yet verified</span>
+                            @endif
+                        </div>
+                    @empty
+                        <p class="text-secondary small mb-0">No documents uploaded yet.</p>
+                    @endforelse
+                @else
+                    <div class="alert alert-secondary small mb-0">
+                        <i class="fa-solid fa-lock"></i> Candidate documents are currently restricted. Contact Altura for access.
+                    </div>
+                @endif
             </div>
         </div>
 

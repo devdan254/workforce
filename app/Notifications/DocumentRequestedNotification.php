@@ -20,7 +20,11 @@ class DocumentRequestedNotification extends Notification
 
     public function toArray($notifiable): array
     {
-        $routeName = $notifiable->isJobSeeker() ? 'job-seeker.documents.index' : 'student.documents.index';
+        $routeName = match (true) {
+            $notifiable->isJobSeeker() => 'job-seeker.documents.index',
+            $notifiable->isEmployer() => 'employer.documents.index',
+            default => 'student.documents.index',
+        };
 
         return [
             'title' => 'Document Required',

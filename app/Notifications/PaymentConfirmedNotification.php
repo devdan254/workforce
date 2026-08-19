@@ -21,7 +21,11 @@ class PaymentConfirmedNotification extends Notification
     public function toArray($notifiable): array
     {
         $amount = number_format((float) $this->payment->amount, 2);
-        $routeName = $notifiable->isJobSeeker() ? 'job-seeker.invoices.show' : 'student.invoices.show';
+        $routeName = match (true) {
+            $notifiable->isJobSeeker() => 'job-seeker.invoices.show',
+            $notifiable->isEmployer() => 'employer.invoices.show',
+            default => 'student.invoices.show',
+        };
 
         return [
             'title' => 'Payment Confirmed',

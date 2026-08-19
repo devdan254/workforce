@@ -34,7 +34,15 @@
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-1">
                                     @if($appointment->status === 'confirmed' && $appointment->meeting_link)
-                                        <a href="{{ $appointment->meeting_link }}" target="_blank" class="btn btn-sm btn-success">Join</a>
+                                        {{-- Interview (job_application_id set) requires the Conduct
+                                             Interviews grant; a direct appointment with the employer
+                                             themselves (Recruitment Consultation etc.) is always
+                                             joinable — that's baseline access, not a gated one. --}}
+                                        @if($appointment->job_application_id && ! auth()->user()->can('employer_interviews.conduct'))
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis align-self-center" title="Altura will conduct this interview">Altura Conducting</span>
+                                        @else
+                                            <a href="{{ $appointment->meeting_link }}" target="_blank" class="btn btn-sm btn-success">Join</a>
+                                        @endif
                                     @endif
                                     @if($appointment->job_application_id)
                                         <a href="{{ route('employer.candidates.show', $appointment->job_application_id) }}" class="btn btn-sm btn-outline-primary">View Candidate</a>

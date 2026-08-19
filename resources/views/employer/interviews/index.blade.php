@@ -33,7 +33,11 @@
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-1">
                                     @if($appointment->status === 'confirmed' && $appointment->meeting_link)
-                                        <a href="{{ $appointment->meeting_link }}" target="_blank" class="btn btn-sm btn-success">Join</a>
+                                        @can('employer_interviews.conduct')
+                                            <a href="{{ $appointment->meeting_link }}" target="_blank" class="btn btn-sm btn-success">Join</a>
+                                        @else
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis align-self-center" title="Altura will conduct this interview">Altura Conducting</span>
+                                        @endcan
                                     @endif
                                     <a href="{{ route('employer.candidates.show', $appointment->job_application_id) }}" class="btn btn-sm btn-outline-primary">View Candidate</a>
                                 </div>

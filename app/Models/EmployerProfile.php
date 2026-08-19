@@ -11,7 +11,7 @@ class EmployerProfile extends Model
     protected $table = 'employer_profiles';
 
     protected $fillable = [
-        'user_id', 'company_name', 'industry', 'country', 'company_website',
+        'user_id', 'assigned_officer_id', 'company_name', 'industry', 'country', 'company_website',
         'company_size', 'city', 'company_description', 'logo_path',
         'contact_job_title', 'profile_completion_percent',
     ];
@@ -19,6 +19,16 @@ class EmployerProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * One assigned Account Manager per company — account-level, not
+     * per-application, since Employer has no per-submission relationship
+     * with Altura the way Student/Job Seeker applications do.
+     */
+    public function assignedOfficer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_officer_id');
     }
 
     /**

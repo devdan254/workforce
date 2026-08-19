@@ -45,10 +45,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'employers.view', 'employers.create', 'employers.update',
             'worker_requests.view', 'worker_requests.create', 'worker_requests.update', 'worker_requests.review',
             // documents.*/payments.*/invoices.*/appointments.*/tickets.*/tasks.* reused unmodified
-            // again — same reasoning as Job Seeker. Candidate-visibility/interview/offer
-            // permission names for Employer's OWN portal come later, once those features
-            // exist to gate — seeding them speculatively now risks names that don't match
-            // the eventual UI.
+            // again — same reasoning as Job Seeker.
+
+            // These two are DELIBERATELY not assigned to the 'employer' role below —
+            // per the spec, an employer has full baseline portal access automatically;
+            // Admin grants these two INDIVIDUALLY, per employer account, via Spatie's
+            // direct permission assignment (EmployerWorkspaceController::updatePermissions).
+            // Two different employers can have different grants — that's the whole point.
+            'employer_interviews.conduct',
+            'employer_documents.view_candidate',
         ];
 
         foreach ($permissions as $permission) {

@@ -152,7 +152,8 @@
                 <div class="card stat-card p-4">
                     <h3 class="h6 fw-semibold mb-2" style="font-family:'Poppins',sans-serif;">Converted</h3>
                     <p class="text-secondary small mb-3">This request has been converted into a job posting.</p>
-                    <a href="{{ route('admin.job-postings.edit', $workerRequest->job_posting_id) }}" class="btn btn-sm btn-primary w-100">View / Edit Job Posting →</a>
+                    <a href="{{ route('admin.job-postings.applicants', $workerRequest->job_posting_id) }}" class="btn btn-sm btn-primary w-100 mb-2">View Applicants →</a>
+                    <a href="{{ route('admin.job-postings.edit', $workerRequest->job_posting_id) }}" class="btn btn-sm btn-outline-secondary w-100">Edit Job Posting →</a>
                 </div>
             @endif
         </div>

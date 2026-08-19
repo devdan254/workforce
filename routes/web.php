@@ -9,7 +9,10 @@ use App\Http\Controllers\Admin\Student\EngagementController as AdminEngagementCo
 use App\Http\Controllers\Admin\Student\FinanceController as AdminFinanceController;
 use App\Http\Controllers\Admin\JobSeeker\ApplicationController as AdminJobSeekerApplicationController;
 use App\Http\Controllers\Admin\JobSeeker\EngagementController as AdminJobSeekerEngagementController;
+use App\Http\Controllers\Admin\Employer\FinanceController as AdminEmployerFinanceController;
 use App\Http\Controllers\Admin\JobSeeker\FinanceController as AdminJobSeekerFinanceController;
+use App\Http\Controllers\Admin\EmployerController as AdminEmployerController;
+use App\Http\Controllers\Admin\EmployerWorkspaceController;
 use App\Http\Controllers\Admin\JobSeekerController as AdminJobSeekerController;
 use App\Http\Controllers\Admin\JobSeekerWorkspaceController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
@@ -227,6 +230,7 @@ Route::middleware(['auth', 'verified', 'role:employer'])
         Route::get('/jobs/{jobPosting}', [EmployerJobController::class, 'show'])->name('jobs.show');
         Route::get('/candidates', [EmployerCandidateController::class, 'index'])->name('candidates.index');
         Route::get('/candidates/{application}', [EmployerCandidateController::class, 'show'])->name('candidates.show');
+        Route::get('/candidate-documents/{document}/download', [DocumentController::class, 'download'])->name('candidate-documents.download');
         Route::get('/interviews', [EmployerInterviewController::class, 'index'])->name('interviews.index');
         Route::get('/offers', [EmployerOfferController::class, 'index'])->name('offers.index');
         Route::get('/offers/{offer}', [EmployerOfferController::class, 'show'])->name('offers.show');
@@ -364,6 +368,8 @@ Route::middleware([
         Route::get('/job-postings/create', [AdminJobPostingController::class, 'create'])->name('job-postings.create');
         Route::post('/job-postings', [AdminJobPostingController::class, 'store'])->name('job-postings.store');
         Route::get('/job-postings/{jobPosting}/edit', [AdminJobPostingController::class, 'edit'])->name('job-postings.edit');
+        Route::get('/job-postings/{jobPosting}', [AdminJobPostingController::class, 'show'])->name('job-postings.show');
+        Route::get('/job-postings/{jobPosting}/applicants', [AdminJobPostingController::class, 'applicants'])->name('job-postings.applicants');
         Route::patch('/job-postings/{jobPosting}', [AdminJobPostingController::class, 'update'])->name('job-postings.update');
         Route::post('/job-postings/{jobPosting}/publish', [AdminJobPostingController::class, 'publish'])->name('job-postings.publish');
         Route::post('/job-postings/{jobPosting}/unpublish', [AdminJobPostingController::class, 'unpublish'])->name('job-postings.unpublish');
@@ -371,6 +377,56 @@ Route::middleware([
         Route::post('/job-postings/{jobPosting}/archive', [AdminJobPostingController::class, 'archive'])->name('job-postings.archive');
         Route::post('/job-postings/{jobPosting}/feature', [AdminJobPostingController::class, 'toggleFeatured'])->name('job-postings.feature');
         Route::post('/job-postings/{jobPosting}/duplicate', [AdminJobPostingController::class, 'duplicate'])->name('job-postings.duplicate');
+
+        /*
+        |----------------------------------------------------------------
+        | Admin Employer Management (Stage 3 — foundation)
+        |----------------------------------------------------------------
+        | List/create/edit/suspend mirrors Admin\JobSeekerController exactly.
+        | Workspace (show) covers Overview + Company Profile this delivery —
+        | Worker Requests/Jobs/Candidates tabs and Documents/Payments/
+        | Invoices/Appointments/Support/Notes/Activity follow as their own
+        | deliveries, same phased approach used for the Job Seeker Workspace.
+        */
+        Route::get('/employers', [AdminEmployerController::class, 'index'])->name('employers.index');
+        Route::get('/employers/create', [AdminEmployerController::class, 'create'])->name('employers.create');
+        Route::post('/employers', [AdminEmployerController::class, 'store'])->name('employers.store');
+        Route::get('/employers/{employer}/edit', [AdminEmployerController::class, 'edit'])->name('employers.edit');
+        Route::patch('/employers/{employer}', [AdminEmployerController::class, 'update'])->name('employers.update');
+        Route::post('/employers/{employer}/suspend', [AdminEmployerController::class, 'suspend'])->name('employers.suspend');
+
+        Route::get('/employers/{employer}', [EmployerWorkspaceController::class, 'show'])->name('employers.show');
+        Route::patch('/employers/{employer}/profile', [EmployerWorkspaceController::class, 'updateProfile'])->name('employers.profile.update');
+
+        Route::post('/employers/{employer}/documents/request', [EmployerWorkspaceController::class, 'requestDocument'])->name('employers.documents.request');
+        Route::post('/employers/{employer}/documents/{document}/verify', [EmployerWorkspaceController::class, 'verifyDocument'])->name('employers.documents.verify');
+        Route::post('/employers/{employer}/documents/{document}/reject', [EmployerWorkspaceController::class, 'rejectDocument'])->name('employers.documents.reject');
+        Route::post('/employers/{employer}/documents/{document}/upload', [EmployerWorkspaceController::class, 'uploadDocument'])->name('employers.documents.upload');
+        Route::patch('/employers/{employer}/documents/{document}', [EmployerWorkspaceController::class, 'updateDocument'])->name('employers.documents.update');
+        Route::delete('/employers/{employer}/documents/{document}', [EmployerWorkspaceController::class, 'deleteDocument'])->name('employers.documents.destroy');
+
+        Route::post('/employers/{employer}/payments/{payment}/confirm', [EmployerWorkspaceController::class, 'confirmPayment'])->name('employers.payments.confirm');
+
+        Route::post('/employers/{employer}/invoices/{invoice}/payments', [AdminEmployerFinanceController::class, 'storePayment'])->name('employers.invoices.payments.store');
+        Route::patch('/employers/{employer}/payments/{payment}', [AdminEmployerFinanceController::class, 'updatePayment'])->name('employers.payments.update');
+        Route::post('/employers/{employer}/payments/{payment}/refund', [AdminEmployerFinanceController::class, 'refundPayment'])->name('employers.payments.refund');
+        Route::post('/employers/{employer}/invoices', [AdminEmployerFinanceController::class, 'storeInvoice'])->name('employers.invoices.store');
+        Route::post('/employers/{employer}/invoices/{invoice}/send', [AdminEmployerFinanceController::class, 'sendInvoice'])->name('employers.invoices.send');
+        Route::post('/employers/{employer}/invoices/{invoice}/cancel', [AdminEmployerFinanceController::class, 'cancelInvoice'])->name('employers.invoices.cancel');
+
+        Route::post('/employers/{employer}/appointments', [EmployerWorkspaceController::class, 'storeAppointment'])->name('employers.appointments.store');
+        Route::patch('/employers/{employer}/appointments/{appointment}', [EmployerWorkspaceController::class, 'updateAppointment'])->name('employers.appointments.update');
+        Route::post('/employers/{employer}/appointments/{appointment}/confirm', [EmployerWorkspaceController::class, 'confirmAppointment'])->name('employers.appointments.confirm');
+        Route::post('/employers/{employer}/appointments/{appointment}/cancel', [EmployerWorkspaceController::class, 'cancelAppointment'])->name('employers.appointments.cancel');
+        Route::post('/employers/{employer}/appointments/{appointment}/complete', [EmployerWorkspaceController::class, 'completeAppointment'])->name('employers.appointments.complete');
+
+        Route::post('/employers/{employer}/tickets', [EmployerWorkspaceController::class, 'storeTicket'])->name('employers.tickets.store');
+        Route::post('/employers/{employer}/tickets/{ticket}/reply', [EmployerWorkspaceController::class, 'replyTicket'])->name('employers.tickets.reply');
+        Route::post('/employers/{employer}/tickets/{ticket}/status', [EmployerWorkspaceController::class, 'updateTicketStatus'])->name('employers.tickets.status');
+
+        Route::post('/employers/{employer}/notes', [EmployerWorkspaceController::class, 'storeNote'])->name('employers.notes.store');
+
+        Route::patch('/employers/{employer}/permissions', [EmployerWorkspaceController::class, 'updatePermissions'])->name('employers.permissions.update');
 
         /*
         |----------------------------------------------------------------
