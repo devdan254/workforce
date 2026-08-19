@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
+use App\Http\Controllers\Admin\StudyPostingController as AdminStudyPostingController;
 use App\Http\Controllers\Admin\WorkerRequestController as AdminWorkerRequestController;
 use App\Http\Controllers\Admin\OnboardingController as AdminOnboardingController;
 use App\Http\Controllers\Admin\Student\ApplicationController as AdminApplicationController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\Employer\ProfileController as EmployerProfileController
 use App\Http\Controllers\Employer\SupportTicketController as EmployerSupportTicketController;
 use App\Http\Controllers\Employer\WorkerRequestController as EmployerWorkerRequestController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Student\ApplicationController;
 use App\Http\Controllers\Student\AppointmentController;
 use App\Http\Controllers\Student\DashboardController;
@@ -56,9 +58,35 @@ use App\Http\Controllers\Student\SupportTicketController;
 use App\Http\Controllers\Student\VisaController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-})->name('home');
+/*
+|--------------------------------------------------------------------------
+| Public marketing site
+|--------------------------------------------------------------------------
+| No auth middleware — this is the actual public-facing site, and / is now
+| the real home page (previously redirected straight to /login, meaning
+| there was no public site at all). Home is fully wired (Featured
+| Opportunities reads live JobPosting/StudyPosting data). Everything else
+| is a placeholder route so the shared layout's navigation never 404s,
+| converted one page at a time going forward — same incremental approach
+| used throughout this entire build.
+*/
+Route::name('public.')->group(function () {
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+
+    Route::get('/jobs', fn () => 'TODO: Public Jobs listing')->name('jobs.index');
+    Route::get('/jobs/{jobPosting}', fn () => 'TODO: Public Job Details')->name('jobs.show');
+
+    Route::get('/study-abroad', fn () => 'TODO: Public Study Abroad listing')->name('study-abroad.index');
+    Route::get('/study-abroad/{studyPosting}', fn () => 'TODO: Public Study Abroad Details')->name('study-abroad.show');
+
+    Route::get('/visa', fn () => 'TODO: Visa Support')->name('visa');
+    Route::get('/hire', fn () => 'TODO: Hire Talent')->name('hire');
+    Route::get('/about', fn () => 'TODO: About')->name('about');
+    Route::get('/contact', fn () => 'TODO: Contact')->name('contact');
+
+    Route::get('/apply/job', fn () => 'TODO: Job Application Form')->name('job-application-form');
+    Route::get('/apply/visa', fn () => 'TODO: Visa Application Form')->name('visa-application-form');
+});
 
 // Breeze's default profile routes (published into your project already) —
 // keep these for password/account changes. Our own richer student profile
@@ -377,6 +405,29 @@ Route::middleware([
         Route::post('/job-postings/{jobPosting}/archive', [AdminJobPostingController::class, 'archive'])->name('job-postings.archive');
         Route::post('/job-postings/{jobPosting}/feature', [AdminJobPostingController::class, 'toggleFeatured'])->name('job-postings.feature');
         Route::post('/job-postings/{jobPosting}/duplicate', [AdminJobPostingController::class, 'duplicate'])->name('job-postings.duplicate');
+
+        /*
+        |----------------------------------------------------------------
+        | Study Postings — Student-side equivalent of Job Postings
+        |----------------------------------------------------------------
+        | Same lifecycle, same action set, mirrors job-postings.* exactly.
+        | This is what the future public frontend / Student Portal's
+        | "Browse Universities" page will read from once built.
+        */
+        Route::get('/study-postings', [AdminStudyPostingController::class, 'index'])->name('study-postings.index');
+        Route::get('/study-postings/create', [AdminStudyPostingController::class, 'create'])->name('study-postings.create');
+        Route::post('/study-postings', [AdminStudyPostingController::class, 'store'])->name('study-postings.store');
+        Route::get('/study-postings/{studyPosting}/edit', [AdminStudyPostingController::class, 'edit'])->name('study-postings.edit');
+        Route::get('/study-postings/{studyPosting}', [AdminStudyPostingController::class, 'show'])->name('study-postings.show');
+        Route::patch('/study-postings/{studyPosting}', [AdminStudyPostingController::class, 'update'])->name('study-postings.update');
+        Route::post('/study-postings/{studyPosting}/publish', [AdminStudyPostingController::class, 'publish'])->name('study-postings.publish');
+        Route::post('/study-postings/{studyPosting}/unpublish', [AdminStudyPostingController::class, 'unpublish'])->name('study-postings.unpublish');
+        Route::post('/study-postings/{studyPosting}/close', [AdminStudyPostingController::class, 'close'])->name('study-postings.close');
+        Route::post('/study-postings/{studyPosting}/archive', [AdminStudyPostingController::class, 'archive'])->name('study-postings.archive');
+        Route::post('/study-postings/{studyPosting}/feature', [AdminStudyPostingController::class, 'toggleFeatured'])->name('study-postings.feature');
+        Route::post('/study-postings/{studyPosting}/duplicate', [AdminStudyPostingController::class, 'duplicate'])->name('study-postings.duplicate');
+        Route::post('/study-postings/{studyPosting}/downloads', [AdminStudyPostingController::class, 'storeDownload'])->name('study-postings.downloads.store');
+        Route::delete('/study-postings/{studyPosting}/downloads/{download}', [AdminStudyPostingController::class, 'destroyDownload'])->name('study-postings.downloads.destroy');
 
         /*
         |----------------------------------------------------------------

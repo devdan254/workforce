@@ -54,6 +54,9 @@ class RolesAndPermissionsSeeder extends Seeder
             // Two different employers can have different grants — that's the whole point.
             'employer_interviews.conduct',
             'employer_documents.view_candidate',
+
+            // ---- Study Postings (Student-side equivalent of Job Postings) ----
+            'study_postings.view', 'study_postings.create', 'study_postings.update', 'study_postings.publish',
         ];
 
         foreach ($permissions as $permission) {
@@ -82,6 +85,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Stage 3 — Admin Officer manages Employers with the same breadth.
             'employers.view', 'employers.create', 'employers.update',
             'worker_requests.view', 'worker_requests.create', 'worker_requests.update', 'worker_requests.review',
+            'study_postings.view', 'study_postings.create', 'study_postings.update', 'study_postings.publish',
         ]);
 
         $educationOfficer = Role::firstOrCreate(['name' => 'education_officer', 'guard_name' => 'web']);
@@ -91,6 +95,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'documents.view', 'documents.upload', 'documents.verify', 'documents.reject',
             'appointments.view', 'appointments.create', 'appointments.update',
             'tasks.view', 'tasks.update',
+            'study_postings.view', 'study_postings.create', 'study_postings.update', 'study_postings.publish',
         ]);
 
         // Finance Officer: deliberately does NOT get applications.change_status —
