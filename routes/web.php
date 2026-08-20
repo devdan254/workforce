@@ -45,6 +45,11 @@ use App\Http\Controllers\Employer\SupportTicketController as EmployerSupportTick
 use App\Http\Controllers\Employer\WorkerRequestController as EmployerWorkerRequestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\InquiryController;
+use App\Http\Controllers\Public\JobApplicationController;
+use App\Http\Controllers\Public\StudyAbroadController;
+use App\Http\Controllers\Public\StudyApplicationController;
+use App\Http\Controllers\Public\JobsController;
 use App\Http\Controllers\Student\ApplicationController;
 use App\Http\Controllers\Student\AppointmentController;
 use App\Http\Controllers\Student\DashboardController;
@@ -73,18 +78,34 @@ use Illuminate\Support\Facades\Route;
 Route::name('public.')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
 
-    Route::get('/jobs', fn () => 'TODO: Public Jobs listing')->name('jobs.index');
-    Route::get('/jobs/{jobPosting}', fn () => 'TODO: Public Job Details')->name('jobs.show');
+    Route::get('/jobs', [JobsController::class, 'index'])->name('jobs.index');
+    Route::get('/jobs/{jobPosting}', [JobsController::class, 'show'])->name('jobs.show');
 
-    Route::get('/study-abroad', fn () => 'TODO: Public Study Abroad listing')->name('study-abroad.index');
-    Route::get('/study-abroad/{studyPosting}', fn () => 'TODO: Public Study Abroad Details')->name('study-abroad.show');
+    // The general "no specific posting" application must be a genuinely
+    // distinct, literal path registered BEFORE the show() wildcard below —
+    // an optional {studyPosting?} segment here would collapse to
+    // /study-abroad/apply when omitted, which is indistinguishable from
+    // /study-abroad/{studyPosting} (2 segments either way) and would have
+    // been swallowed by show()'s route-model-binding first.
+    Route::get('/study-abroad/apply', [StudyApplicationController::class, 'create'])->name('study-application.create.general');
+    Route::post('/study-abroad/apply', [StudyApplicationController::class, 'store'])->name('study-application.store.general');
+
+    Route::get('/study-abroad', [StudyAbroadController::class, 'index'])->name('study-abroad.index');
+    Route::get('/study-abroad/{studyPosting}', [StudyAbroadController::class, 'show'])->name('study-abroad.show');
+    Route::get('/study-abroad/{studyPosting}/apply', [StudyApplicationController::class, 'create'])->name('study-application.create');
+    Route::post('/study-abroad/{studyPosting}/apply', [StudyApplicationController::class, 'store'])->name('study-application.store');
 
     Route::get('/visa', fn () => 'TODO: Visa Support')->name('visa');
     Route::get('/hire', fn () => 'TODO: Hire Talent')->name('hire');
     Route::get('/about', fn () => 'TODO: About')->name('about');
-    Route::get('/contact', fn () => 'TODO: Contact')->name('contact');
+    Route::get('/contact', fn () => view('public.contact'))->name('contact');
+    Route::post('/inquiries/consultation', [InquiryController::class, 'storeConsultation'])->name('inquiries.consultation');
+    Route::post('/inquiries/contact', [InquiryController::class, 'storeContact'])->name('inquiries.contact');
 
-    Route::get('/apply/job', fn () => 'TODO: Job Application Form')->name('job-application-form');
+    Route::get('/apply/job', [JobApplicationController::class, 'create'])->name('job-application-form');
+    Route::post('/apply/job', [JobApplicationController::class, 'store'])->name('job-application-form.store');
+    Route::get('/apply/job/talent-pool-profile', [JobApplicationController::class, 'talentPoolProfile'])->name('job-application-form.talent-pool');
+    Route::post('/apply/job/talent-pool-profile', [JobApplicationController::class, 'storeTalentPoolProfile'])->name('job-application-form.talent-pool.store');
     Route::get('/apply/visa', fn () => 'TODO: Visa Application Form')->name('visa-application-form');
 });
 

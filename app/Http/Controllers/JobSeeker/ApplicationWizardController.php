@@ -4,6 +4,7 @@ namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\JobSeeker\StoreWizardStepRequest;
+use App\Mail\AdminNotificationMail;
 use App\Models\Document;
 use App\Models\DocumentCategory;
 use App\Models\JobApplication;
@@ -15,6 +16,7 @@ use App\Services\DocumentVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -150,6 +152,7 @@ class ApplicationWizardController extends Controller
     public function uploadDocument(Request $request, JobPosting $jobPosting, string $slot, DocumentVerificationService $docService): RedirectResponse
     {
         $slots = [
+            'cv' => ['name' => 'CV / Resume', 'category' => 'employment-documents'],
             'passport' => ['name' => 'Passport', 'category' => 'identity-documents'],
             'certificates' => ['name' => 'Academic Certificates', 'category' => 'academic-documents'],
             'license' => ['name' => 'Professional License', 'category' => 'employment-documents'],
@@ -247,6 +250,23 @@ class ApplicationWizardController extends Controller
         });
 
         session()->forget("job_application_wizard.{$jobPosting->id}");
+
+        // Real "application was made" moment — this is where the admin
+        // notification belongs, not at account-registration time, since a
+        // guest who only creates an account (no job yet, e.g. talent pool)
+        // hasn't actually submitted an application yet.
+        Mail::to(config('notifications.admin_email'))->send(new AdminNotificationMail(
+            heading: 'New Job Application Received',
+            lines: [
+                'Applicant' => $user->name,
+                'Email' => $user->email,
+                'Job' => $jobPosting->title,
+                'Location' => $jobPosting->city ? "{$jobPosting->city}, {$jobPosting->country}" : $jobPosting->country,
+                'Reference' => $application->reference_number,
+            ],
+            actionLabel: 'Review Application',
+            actionUrl: route('admin.job-seekers.show', $user->id),
+        ));
 
         return redirect()->route('job-seeker.dashboard')
             ->with('success', "Application submitted! Reference: {$application->reference_number}. Our team will review it shortly.");

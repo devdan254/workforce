@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 class JobPosting extends Model
 {
     use SoftDeletes;
+
     protected $table = 'job_postings';
 
     protected $fillable = [
@@ -62,7 +63,15 @@ class JobPosting extends Model
         return $this->belongsTo(User::class, 'posted_by');
     }
 
-      public function employer(): BelongsTo
+    /**
+     * The employer this posting originated from, if any — nullable by
+     * design (Admin-sourced postings have no employer at all). This was
+     * the missing half of User::jobPostings(); the inverse existed since
+     * Stage 3 Step 1, but nothing had actually added the forward
+     * relationship until this fix, so $posting->employer always silently
+     * returned null even when employer_id was correctly set.
+     */
+    public function employer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'employer_id');
     }
@@ -91,6 +100,42 @@ class JobPosting extends Model
     public function getImageUrlAttribute(): ?string
     {
         return $this->image_path ? Storage::disk('public')->url($this->image_path) : null;
+    }
+
+    /**
+     * responsibilities/requirements/skills/benefits are all stored as free
+     * text (one item per line, or comma-separated) rather than separate
+     * tables — same reasoning as StudyPosting::coursesList(). One shared
+     * splitter, four named accessors so the public Job Details view stays
+     * readable rather than calling a generic helper with a field name string.
+     */
+    private function splitLines(?string $text): array
+    {
+        return collect(preg_split('/[,\n]+/', (string) $text))
+            ->map(fn ($line) => trim($line))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    public function responsibilitiesList(): array
+    {
+        return $this->splitLines($this->responsibilities);
+    }
+
+    public function requirementsList(): array
+    {
+        return $this->splitLines($this->requirements);
+    }
+
+    public function skillsList(): array
+    {
+        return $this->splitLines($this->skills);
+    }
+
+    public function benefitsList(): array
+    {
+        return $this->splitLines($this->benefits);
     }
 
     /**

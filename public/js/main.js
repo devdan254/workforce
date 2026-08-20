@@ -204,13 +204,52 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.classList.add('btn-loading');
         btn.disabled = true;
       }
-      setTimeout(function () {
-        if (btn) { btn.classList.remove('btn-loading'); btn.disabled = false; }
-        form.style.display = 'none';
-        var success = form.parentElement.querySelector('.form-success');
-        if (success) success.classList.add('show');
-        else alert('Thank you! Your submission has been received.');
-      }, 1400);
+
+      var formError = form.parentElement.querySelector('.form-submit-error');
+
+      /* Real submission — no more fake setTimeout success. POSTs to the
+         form's own action URL, real Laravel validation, real email sent
+         server-side. Accept: application/json makes Laravel return JSON
+         validation errors (422) instead of an HTML redirect, so this stays
+         inline exactly like the original design intended. */
+      fetch(form.action, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new FormData(form),
+      })
+        .then(function (response) {
+          if (response.ok) {
+            form.style.display = 'none';
+            var success = form.parentElement.querySelector('.form-success');
+            if (success) success.classList.add('show');
+            return;
+          }
+          if (response.status === 422) {
+            return response.json().then(function (data) {
+              form.querySelectorAll('.form-field, .checkbox-field').forEach(function (wrap) { wrap.classList.remove('error'); });
+              Object.keys(data.errors || {}).forEach(function (key) {
+                var field = form.querySelector('[name="' + key + '"]');
+                if (!field) return;
+                var wrap = field.closest('.form-field') || field.closest('.checkbox-field');
+                if (wrap) {
+                  wrap.classList.add('error');
+                  var errorEl = wrap.querySelector('.field-error');
+                  if (errorEl) errorEl.textContent = data.errors[key][0];
+                }
+              });
+              var firstBad = form.querySelector('.error');
+              if (firstBad) firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+          }
+          throw new Error('Unexpected response');
+        })
+        .catch(function () {
+          if (formError) { formError.style.display = 'block'; }
+          else { alert('Something went wrong sending your message. Please try again or contact us directly.'); }
+        })
+        .finally(function () {
+          if (btn) { btn.classList.remove('btn-loading'); btn.disabled = false; }
+        });
     });
 
     form.querySelectorAll('input, select, textarea').forEach(function (field) {
@@ -262,7 +301,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     wizard.querySelectorAll('.wizard-submit').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
-        e.preventDefault();
         var panel = wizPanels[stepIdx];
         var requiredFields = panel.querySelectorAll('[required]');
         var valid = true;
@@ -273,13 +311,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (wrap) wrap.classList.add('error');
           } else if (wrap) { wrap.classList.remove('error'); }
         });
-        if (!valid) return;
+        if (!valid) { e.preventDefault(); return; }
+        /* Real submission — the surrounding <form> POSTs to the actual
+           backend from here. No more fake setTimeout success; the page
+           the server redirects to (validation-error back to this page,
+           or a real success page) is what the person actually sees. */
         btn.classList.add('btn-loading'); btn.disabled = true;
-        setTimeout(function () {
-          wizard.style.display = 'none';
-          var success = document.querySelector('.form-success');
-          if (success) { success.classList.add('show'); success.scrollIntoView({behavior:'smooth'}); }
-        }, 1500);
       });
     });
     renderWizard();
@@ -329,25 +366,45 @@ document.addEventListener('DOMContentLoaded', function () {
     else img.addEventListener('load', function () { img.classList.add('loaded'); });
   });
 
-  /* ---------- Job filter demo (client-side show/hide) ---------- */
-  var jobSearch = document.querySelector('[data-job-search]');
-  var jobCategory = document.querySelector('[data-job-category]');
-  var jobCountry = document.querySelector('[data-job-country]');
-  var jobCards = document.querySelectorAll('[data-job-card]');
-  function filterJobs() {
-    if (!jobCards.length) return;
-    var q = jobSearch ? jobSearch.value.toLowerCase() : '';
-    var cat = jobCategory ? jobCategory.value : '';
-    var country = jobCountry ? jobCountry.value : '';
-    jobCards.forEach(function (card) {
-      var matchQ = !q || card.getAttribute('data-title').toLowerCase().indexOf(q) !== -1;
-      var matchCat = !cat || card.getAttribute('data-category') === cat;
-      var matchCountry = !country || card.getAttribute('data-country') === country;
-      card.style.display = (matchQ && matchCat && matchCountry) ? '' : 'none';
+  /* Client-side "job filter demo" removed — jobs.html's search/category/
+     country filtering is now real, server-side, against the live database
+     (see Public\JobsController). Filtering happens via page reload with
+     query params, not JS show/hide over static cards. */
+
+  /* ---------- Share menu ---------- */
+  document.querySelectorAll('[data-share-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var menu = btn.closest('[data-share-menu]');
+      var wasOpen = menu.classList.contains('is-open');
+      document.querySelectorAll('[data-share-menu].is-open').forEach(function (m) { m.classList.remove('is-open'); });
+      if (!wasOpen) menu.classList.add('is-open');
     });
-  }
-  [jobSearch, jobCategory, jobCountry].forEach(function (el) {
-    if (el) el.addEventListener('input', filterJobs);
+  });
+  document.querySelectorAll('[data-share-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var url = btn.getAttribute('data-share-url');
+      var menu = btn.closest('[data-share-menu]');
+      var finish = function () {
+        menu.classList.add('is-copied');
+        setTimeout(function () { menu.classList.remove('is-copied', 'is-open'); }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(finish).catch(finish);
+      } else {
+        var temp = document.createElement('textarea');
+        temp.value = url;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        finish();
+      }
+    });
+  });
+  document.addEventListener('click', function () {
+    document.querySelectorAll('[data-share-menu].is-open').forEach(function (m) { m.classList.remove('is-open'); });
   });
 
 });
