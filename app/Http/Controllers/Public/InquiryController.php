@@ -70,4 +70,34 @@ class InquiryController extends Controller
 
         return response()->json(['message' => 'Message sent.']);
     }
+
+    public function storeVisaConsultation(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'country_of_residence' => ['nullable', 'string', 'max:100'],
+            'destination_country' => ['nullable', 'string', 'max:100'],
+            'visa_type' => ['nullable', 'string', 'max:100'],
+            'preferred_date' => ['nullable', 'date'],
+            'message' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        Mail::to(config('notifications.info_email'))->send(new AdminNotificationMail(
+            heading: 'Visa Consultation Request',
+            lines: array_filter([
+                'Name' => $data['name'],
+                'Email' => $data['email'],
+                'Phone' => $data['phone'],
+                'Country of Residence' => $data['country_of_residence'] ?? null,
+                'Destination Country' => $data['destination_country'] ?? null,
+                'Visa Type' => $data['visa_type'] ?? null,
+                'Preferred Consultation Date' => $data['preferred_date'] ?? null,
+                'Message' => $data['message'] ?? null,
+            ]),
+        ));
+
+        return response()->json(['message' => 'Consultation requested.']);
+    }
 }

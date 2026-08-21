@@ -44,11 +44,14 @@ use App\Http\Controllers\Employer\ProfileController as EmployerProfileController
 use App\Http\Controllers\Employer\SupportTicketController as EmployerSupportTicketController;
 use App\Http\Controllers\Employer\WorkerRequestController as EmployerWorkerRequestController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\HireController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InquiryController;
 use App\Http\Controllers\Public\JobApplicationController;
 use App\Http\Controllers\Public\StudyAbroadController;
 use App\Http\Controllers\Public\StudyApplicationController;
+use App\Http\Controllers\Public\VisaApplicationController;
+use App\Http\Controllers\Public\VisaController as PublicVisaController;
 use App\Http\Controllers\Public\JobsController;
 use App\Http\Controllers\Student\ApplicationController;
 use App\Http\Controllers\Student\AppointmentController;
@@ -95,18 +98,21 @@ Route::name('public.')->group(function () {
     Route::get('/study-abroad/{studyPosting}/apply', [StudyApplicationController::class, 'create'])->name('study-application.create');
     Route::post('/study-abroad/{studyPosting}/apply', [StudyApplicationController::class, 'store'])->name('study-application.store');
 
-    Route::get('/visa', fn () => 'TODO: Visa Support')->name('visa');
-    Route::get('/hire', fn () => 'TODO: Hire Talent')->name('hire');
-    Route::get('/about', fn () => 'TODO: About')->name('about');
+    Route::get('/visa', [PublicVisaController::class, 'index'])->name('visa');
+    Route::get('/hire', [HireController::class, 'create'])->name('hire');
+    Route::post('/hire', [HireController::class, 'store'])->name('hire.store');
+    Route::get('/about', fn () => view('public.about'))->name('about');
     Route::get('/contact', fn () => view('public.contact'))->name('contact');
     Route::post('/inquiries/consultation', [InquiryController::class, 'storeConsultation'])->name('inquiries.consultation');
     Route::post('/inquiries/contact', [InquiryController::class, 'storeContact'])->name('inquiries.contact');
+    Route::post('/inquiries/visa-consultation', [InquiryController::class, 'storeVisaConsultation'])->name('inquiries.visa-consultation');
 
     Route::get('/apply/job', [JobApplicationController::class, 'create'])->name('job-application-form');
     Route::post('/apply/job', [JobApplicationController::class, 'store'])->name('job-application-form.store');
     Route::get('/apply/job/talent-pool-profile', [JobApplicationController::class, 'talentPoolProfile'])->name('job-application-form.talent-pool');
     Route::post('/apply/job/talent-pool-profile', [JobApplicationController::class, 'storeTalentPoolProfile'])->name('job-application-form.talent-pool.store');
-    Route::get('/apply/visa', fn () => 'TODO: Visa Application Form')->name('visa-application-form');
+    Route::get('/apply/visa', [VisaApplicationController::class, 'create'])->name('visa-application-form');
+    Route::post('/apply/visa', [VisaApplicationController::class, 'store'])->name('visa-application-form.store');
 });
 
 // Breeze's default profile routes (published into your project already) —

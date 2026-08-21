@@ -17,7 +17,7 @@
     <div class="d-flex align-items-center justify-content-center py-5" style="min-height: 100vh;">
         <div style="width: 100%; max-width: 440px;" class="px-3">
             <div class="text-center mb-4">
-                <a href="{{ route('home') }}">
+                <a href="{{ route('public.home') }}">
                     <img src="{{ asset('images/logo.png') }}" alt="Altura Workforce Solutions" style="height: 64px; border-radius: 12px;">
                 </a>
             </div>
