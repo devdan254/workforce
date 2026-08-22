@@ -27,12 +27,12 @@
       <div class="form-card reveal" style="max-width:900px;margin:0 auto;" data-wizard>
         <div class="wizard-progress">
           <div class="wizard-progress-fill"></div>
+          <div class="wizard-step-indicator active"><div class="dot">1</div><span class="label">Personal</span></div>
+          <div class="wizard-step-indicator"><div class="dot">2</div><span class="label">Travel</span></div>
+          <div class="wizard-step-indicator"><div class="dot">3</div><span class="label">Visa</span></div>
+          <div class="wizard-step-indicator"><div class="dot">4</div><span class="label">Documents</span></div>
+          <div class="wizard-step-indicator"><div class="dot">5</div><span class="label">Submit</span></div>
         </div>
-        <div class="wizard-step-indicator active"><div class="dot">1</div><span class="label">Personal</span></div>
-        <div class="wizard-step-indicator"><div class="dot">2</div><span class="label">Travel</span></div>
-        <div class="wizard-step-indicator"><div class="dot">3</div><span class="label">Visa</span></div>
-        <div class="wizard-step-indicator"><div class="dot">4</div><span class="label">Documents</span></div>
-        <div class="wizard-step-indicator"><div class="dot">5</div><span class="label">Submit</span></div>
 
         <form method="POST" action="{{ route('public.visa-application-form.store') }}" enctype="multipart/form-data">
           @csrf

@@ -7,6 +7,11 @@ use App\Models\User;
 
 class PaymentPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $user->can('payments.view');
+    }
+
     public function view(User $user, Payment $payment): bool
     {
         if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {

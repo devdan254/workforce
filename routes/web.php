@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
+use App\Http\Controllers\Admin\ResourceController as AdminResourceController;
+use App\Http\Controllers\Admin\PaymentManagementController;
 use App\Http\Controllers\Admin\StudyPostingController as AdminStudyPostingController;
+use App\Http\Controllers\Admin\VisaManagementController;
 use App\Http\Controllers\Admin\WorkerRequestController as AdminWorkerRequestController;
 use App\Http\Controllers\Admin\OnboardingController as AdminOnboardingController;
 use App\Http\Controllers\Admin\Student\ApplicationController as AdminApplicationController;
@@ -455,6 +458,64 @@ Route::middleware([
         Route::post('/study-postings/{studyPosting}/duplicate', [AdminStudyPostingController::class, 'duplicate'])->name('study-postings.duplicate');
         Route::post('/study-postings/{studyPosting}/downloads', [AdminStudyPostingController::class, 'storeDownload'])->name('study-postings.downloads.store');
         Route::delete('/study-postings/{studyPosting}/downloads/{download}', [AdminStudyPostingController::class, 'destroyDownload'])->name('study-postings.downloads.destroy');
+
+        /*
+        |----------------------------------------------------------------
+        | Visa Management — one central module for Student, Job Seeker,
+        | and standalone/guest visa applicants (Stage 2 of the incremental
+        | build). Documents/Payments/Invoices are explicit placeholders on
+        | the show page until their own dedicated stages.
+        */
+        Route::get('/visa-management', [VisaManagementController::class, 'index'])->name('visa-management.index');
+        Route::get('/visa-management/create', [VisaManagementController::class, 'create'])->name('visa-management.create');
+        Route::post('/visa-management', [VisaManagementController::class, 'store'])->name('visa-management.store');
+        Route::get('/visa-management/{visaApplication}/edit', [VisaManagementController::class, 'edit'])->name('visa-management.edit');
+        Route::get('/visa-management/{visaApplication}', [VisaManagementController::class, 'show'])->name('visa-management.show');
+        Route::patch('/visa-management/{visaApplication}', [VisaManagementController::class, 'update'])->name('visa-management.update');
+        Route::post('/visa-management/{visaApplication}/status', [VisaManagementController::class, 'updateStatus'])->name('visa-management.status.update');
+        Route::post('/visa-management/{visaApplication}/notes', [VisaManagementController::class, 'storeNote'])->name('visa-management.notes.store');
+
+        Route::post('/visa-management/{visaApplication}/documents/request', [VisaManagementController::class, 'requestDocument'])->name('visa-management.documents.request');
+        Route::post('/visa-management/{visaApplication}/documents/{document}/upload', [VisaManagementController::class, 'uploadDocument'])->name('visa-management.documents.upload');
+        Route::post('/visa-management/{visaApplication}/documents/{document}/verify', [VisaManagementController::class, 'verifyDocument'])->name('visa-management.documents.verify');
+        Route::post('/visa-management/{visaApplication}/documents/{document}/reject', [VisaManagementController::class, 'rejectDocument'])->name('visa-management.documents.reject');
+        Route::patch('/visa-management/{visaApplication}/documents/{document}', [VisaManagementController::class, 'updateDocument'])->name('visa-management.documents.update');
+        Route::delete('/visa-management/{visaApplication}/documents/{document}', [VisaManagementController::class, 'deleteDocument'])->name('visa-management.documents.destroy');
+
+        Route::post('/visa-management/{visaApplication}/invoices', [VisaManagementController::class, 'storeInvoice'])->name('visa-management.invoices.store');
+        Route::post('/visa-management/{visaApplication}/invoices/{invoice}/send', [VisaManagementController::class, 'sendInvoice'])->name('visa-management.invoices.send');
+        Route::post('/visa-management/{visaApplication}/invoices/{invoice}/cancel', [VisaManagementController::class, 'cancelInvoice'])->name('visa-management.invoices.cancel');
+        Route::post('/visa-management/{visaApplication}/invoices/{invoice}/payments', [VisaManagementController::class, 'storePayment'])->name('visa-management.invoices.payments.store');
+        Route::post('/visa-management/{visaApplication}/payments/{payment}/confirm', [VisaManagementController::class, 'confirmPayment'])->name('visa-management.payments.confirm');
+        Route::patch('/visa-management/{visaApplication}/payments/{payment}', [VisaManagementController::class, 'updatePayment'])->name('visa-management.payments.update');
+        Route::post('/visa-management/{visaApplication}/payments/{payment}/refund', [VisaManagementController::class, 'refundPayment'])->name('visa-management.payments.refund');
+
+        /*
+        |----------------------------------------------------------------
+        | Payments Management — the one central place every payment in
+        | the system is visible, regardless of Student/Job Seeker/
+        | Employer/Visa. Every action reuses PaymentService directly —
+        | confirming a payment here confirms the exact same row those
+        | workspaces already read.
+        */
+        Route::get('/payments-management', [PaymentManagementController::class, 'index'])->name('payments-management.index');
+        Route::post('/payments-management/{payment}/confirm', [PaymentManagementController::class, 'confirm'])->name('payments-management.confirm');
+        Route::post('/payments-management/{payment}/refund', [PaymentManagementController::class, 'refund'])->name('payments-management.refund');
+        Route::patch('/payments-management/{payment}', [PaymentManagementController::class, 'update'])->name('payments-management.update');
+        Route::get('/payments-management/invoices/{invoice}/download', [PaymentManagementController::class, 'downloadInvoice'])->name('payments-management.invoices.download');
+
+        /*
+        |----------------------------------------------------------------
+        | Resources — the only place resources can be managed. Student,
+        | Job Seeker, and Employer portals only ever read from this same
+        | table (Student\ResourceController, reused across all three).
+        */
+        Route::get('/resources', [AdminResourceController::class, 'index'])->name('resources.index');
+        Route::get('/resources/create', [AdminResourceController::class, 'create'])->name('resources.create');
+        Route::post('/resources', [AdminResourceController::class, 'store'])->name('resources.store');
+        Route::get('/resources/{resource}/edit', [AdminResourceController::class, 'edit'])->name('resources.edit');
+        Route::patch('/resources/{resource}', [AdminResourceController::class, 'update'])->name('resources.update');
+        Route::delete('/resources/{resource}', [AdminResourceController::class, 'destroy'])->name('resources.destroy');
 
         /*
         |----------------------------------------------------------------

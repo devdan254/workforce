@@ -546,7 +546,12 @@
                                     <input type="text" name="destination_country" class="form-control form-control-sm mb-2" placeholder="Destination country" value="{{ $application->university->country }}" required>
                                 @else
                                     <input type="hidden" name="existing_visa" value="1">
-                                    <div class="small text-secondary mb-2">Current: {{ $application->visaApplication->currentStatus->label }}</div>
+                                    <div class="small text-secondary mb-2">
+                                        Current: {{ $application->visaApplication->currentStatus->label }}
+                                        @can('view', $application->visaApplication)
+                                            · <a href="{{ route('admin.visa-management.show', $application->visaApplication) }}">View in Visa Management →</a>
+                                        @endcan
+                                    </div>
                                 @endif
                                 <div class="d-flex gap-2 mb-2">
                                     @if($nextVisaStatuses->isNotEmpty())

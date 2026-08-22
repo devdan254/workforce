@@ -7,6 +7,11 @@ use App\Models\User;
 
 class InvoicePolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $user->can('invoices.view');
+    }
+
     public function view(User $user, Invoice $invoice): bool
     {
         if ($user->isStudent() || $user->isJobSeeker() || $user->isEmployer()) {

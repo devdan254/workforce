@@ -158,6 +158,18 @@ class User extends Authenticatable
         return $this->hasRole('employer');
     }
 
+    /**
+     * A guest visa applicant with no Student/Job Seeker account yet — see
+     * VisaApplication's own class docblock for the full reasoning. This
+     * role carries no permissions and has no portal; it exists purely so
+     * Documents/Payments/Invoices have a real user_id to attach to before
+     * "Convert Applicant" assigns their actual category.
+     */
+    public function isVisaApplicantOnly(): bool
+    {
+        return $this->hasRole('visa_applicant') && ! $this->isStudent() && ! $this->isJobSeeker();
+    }
+
     public function isStaff(): bool
     {
         return ! $this->isStudent() && ! $this->isJobSeeker() && ! $this->isEmployer();

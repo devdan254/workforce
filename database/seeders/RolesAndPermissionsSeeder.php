@@ -21,7 +21,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'invoices.view', 'invoices.create', 'invoices.update', 'invoices.send',
 
-            'visa.view', 'visa.update',
+            'visa.view', 'visa.create', 'visa.update', 'visa.convert',
 
             'appointments.view', 'appointments.create', 'appointments.update',
 
@@ -73,7 +73,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'applications.view', 'applications.create', 'applications.update', 'applications.change_status',
             'documents.view', 'documents.upload', 'documents.verify', 'documents.reject', 'documents.delete',
             'invoices.view', 'invoices.create',
-            'visa.view', 'visa.update',
+            'visa.view', 'visa.create', 'visa.update', 'visa.convert',
             'appointments.view', 'appointments.create', 'appointments.update',
             'tickets.view', 'tickets.respond', 'tickets.close',
             'tasks.view', 'tasks.create', 'tasks.update',
@@ -111,7 +111,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $visaOfficer = Role::firstOrCreate(['name' => 'visa_officer', 'guard_name' => 'web']);
         $visaOfficer->syncPermissions([
             'students.view',
-            'visa.view', 'visa.update',
+            'visa.view', 'visa.create', 'visa.update', 'visa.convert',
             'documents.view', 'documents.upload', 'documents.verify', 'documents.reject',
             'appointments.view', 'appointments.create', 'appointments.update',
             'tasks.view', 'tasks.update',
@@ -188,5 +188,15 @@ class RolesAndPermissionsSeeder extends Seeder
         // direct permission assignment, NOT via this role — that's a later
         // phase once Candidates/Documents exist to gate.
         Role::firstOrCreate(['name' => 'employer', 'guard_name' => 'web']);
+
+        // Stage 6 — Visa Management. Same zero-role-permissions pattern as
+        // student/job_seeker/employer: a guest visa-only applicant (no
+        // existing Student/Job Seeker account) still needs a REAL User row
+        // for Documents/Payments/Invoices to attach to via their existing
+        // student_id-style FKs — this role marks that row as "not yet a
+        // Student or Job Seeker," nothing more. No portal exists for it;
+        // it's purely an anchor point Admin manages until "Convert
+        // Applicant" assigns a real category.
+        Role::firstOrCreate(['name' => 'visa_applicant', 'guard_name' => 'web']);
     }
 }

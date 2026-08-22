@@ -12,7 +12,7 @@ class Invoice extends Model
     use HasExclusiveApplicationLink;
 
     protected $fillable = [
-        'student_id', 'study_application_id', 'job_application_id', 'invoice_number', 'description',
+        'student_id', 'study_application_id', 'job_application_id', 'visa_application_id', 'invoice_number', 'description',
         'currency', 'subtotal', 'tax', 'total', 'amount_paid', 'status', 'due_date', 'sent_at',
     ];
 
@@ -69,6 +69,17 @@ class Invoice extends Model
         return $this->belongsTo(JobApplication::class);
     }
 
+    /**
+     * Tags an invoice as genuinely visa-related — see this column's own
+     * migration for why study_application_id/job_application_id alone
+     * aren't enough to identify that. Independent of both; an invoice can
+     * carry this alongside either.
+     */
+    public function visaApplication(): BelongsTo
+    {
+        return $this->belongsTo(VisaApplication::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
@@ -117,3 +128,4 @@ class Invoice extends Model
         return static::financialSummaryForPerson($studentId);
     }
 }
+

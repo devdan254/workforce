@@ -26,6 +26,15 @@
                 <a class="nav-link {{ request()->routeIs('admin.study-postings.*') ? 'active' : '' }}" href="{{ route('admin.study-postings.index') }}">
                     <i class="fa-solid fa-graduation-cap"></i>Study Postings
                 </a>
+                <a class="nav-link {{ request()->routeIs('admin.visa-management.*') ? 'active' : '' }}" href="{{ route('admin.visa-management.index') }}">
+                    <i class="fa-solid fa-passport"></i>Visa Management
+                </a>
+                <a class="nav-link {{ request()->routeIs('admin.payments-management.*') ? 'active' : '' }}" href="{{ route('admin.payments-management.index') }}">
+                    <i class="fa-solid fa-money-bill-wave"></i>Payments Management
+                </a>
+                <a class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}" href="{{ route('admin.resources.index') }}">
+                    <i class="fa-solid fa-book-open"></i>Resources
+                </a>
                 <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}">
                     <i class="fa-solid fa-people-arrows"></i>Worker Requests
                 </a>
@@ -97,6 +106,9 @@
                 <a class="nav-link {{ request()->routeIs('admin.job-seekers.*') ? 'active' : '' }}" href="{{ route('admin.job-seekers.index') }}"><i class="fa-solid fa-briefcase"></i>Job Seekers</a>
                 <a class="nav-link {{ request()->routeIs('admin.job-postings.*') ? 'active' : '' }}" href="{{ route('admin.job-postings.index') }}"><i class="fa-solid fa-list-check"></i>Job Postings</a>
                 <a class="nav-link {{ request()->routeIs('admin.study-postings.*') ? 'active' : '' }}" href="{{ route('admin.study-postings.index') }}"><i class="fa-solid fa-graduation-cap"></i>Study Postings</a>
+                <a class="nav-link {{ request()->routeIs('admin.visa-management.*') ? 'active' : '' }}" href="{{ route('admin.visa-management.index') }}"><i class="fa-solid fa-passport"></i>Visa Management</a>
+                <a class="nav-link {{ request()->routeIs('admin.payments-management.*') ? 'active' : '' }}" href="{{ route('admin.payments-management.index') }}"><i class="fa-solid fa-money-bill-wave"></i>Payments Management</a>
+                <a class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}" href="{{ route('admin.resources.index') }}"><i class="fa-solid fa-book-open"></i>Resources</a>
                 <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}"><i class="fa-solid fa-people-arrows"></i>Worker Requests</a>
                 <a class="nav-link {{ request()->routeIs('admin.employers.*') ? 'active' : '' }}" href="{{ route('admin.employers.index') }}"><i class="fa-solid fa-building"></i>Employers</a>
             </nav>

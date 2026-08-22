@@ -312,13 +312,28 @@ document.addEventListener('DOMContentLoaded', function () {
           } else if (wrap) { wrap.classList.remove('error'); }
         });
         if (!valid) { e.preventDefault(); return; }
-        /* Real submission — the surrounding <form> POSTs to the actual
-           backend from here. No more fake setTimeout success; the page
-           the server redirects to (validation-error back to this page,
-           or a real success page) is what the person actually sees. */
-        btn.classList.add('btn-loading'); btn.disabled = true;
+        /* Deliberately NOT touching the button here. Disabling a submit
+           button synchronously inside its own click handler — before the
+           browser's native submission for that same click has actually
+           fired — cancels the pending submission in most browsers. That's
+           exactly why it "just loaded but never sent": this line used to
+           set btn.disabled = true right here, which looked like a loading
+           state but silently killed the POST. Real submission happens by
+           NOT interfering; the loading state below fires on the form's own
+           'submit' event instead, which only runs once the browser has
+           already committed to sending the request — nothing left to race. */
       });
     });
+    var wizardForm = wizard.querySelector('form');
+    if (wizardForm) {
+      wizardForm.addEventListener('submit', function () {
+        var submitBtn = wizardForm.querySelector('.wizard-submit');
+        if (submitBtn) {
+          submitBtn.classList.add('btn-loading');
+          submitBtn.disabled = true;
+        }
+      });
+    }
     renderWizard();
 
     /* add another experience block */

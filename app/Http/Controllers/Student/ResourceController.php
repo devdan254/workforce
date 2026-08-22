@@ -16,21 +16,33 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * portal sees different resource content (study-abroad guides vs.
  * job-search guides vs. employer/hiring guides) even though the
  * underlying query/download logic is identical.
+ *
+ * Previously showed every published resource to every portal regardless
+ * of relevance — a known, flagged gap since the Employer Resources page
+ * was built. Now filters by audience, using the same role string
+ * (student/job_seeker/employer) Admin assigns when creating a resource.
  */
 class ResourceController extends Controller
 {
     public function index(Request $request): View
     {
+        $role = match (true) {
+            $request->user()->isJobSeeker() => 'job_seeker',
+            $request->user()->isEmployer() => 'employer',
+            default => 'student',
+        };
+
         $resources = Resource::published()
+            ->forAudience($role)
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))
             ->orderBy('category')
             ->orderBy('title')
             ->get()
             ->groupBy('category');
 
-        $view = match (true) {
-            $request->user()->isJobSeeker() => 'job-seeker.resources.index',
-            $request->user()->isEmployer() => 'employer.resources.index',
+        $view = match ($role) {
+            'job_seeker' => 'job-seeker.resources.index',
+            'employer' => 'employer.resources.index',
             default => 'student.resources.index',
         };
 

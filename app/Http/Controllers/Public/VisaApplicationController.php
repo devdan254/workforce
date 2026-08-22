@@ -4,23 +4,31 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Mail\AdminNotificationMail;
+use App\Models\Document;
+use App\Models\DocumentCategory;
+use App\Models\StatusTransition;
+use App\Models\User;
+use App\Models\VisaApplication;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * Genuinely different from Job/Study Application: VisaApplication (the
- * model) only ever exists as a downstream step of an EXISTING Job or Study
- * Application already in progress — created by Admin, never standalone.
- * There's no backend entity for "a brand-new visitor's general visa
- * request" to attach to. Rather than invent new database infrastructure
- * for this (a real VisaRequest table + Admin management UI) or silently
- * throw away everything the wizard collects, this preserves the full
- * 5-step wizard experience but sends everything — including uploaded
- * documents as real email attachments — to info@alturaworkforce.com.
- * Nothing is persisted; the email IS the record, same principle as
- * Contact/Consultation, just carrying far more detail and real files.
+ * Stage 3 of the incremental Visa Management build — the wizard now
+ * creates a REAL VisaApplication (standalone/guest path), not just an
+ * email. Reuses the exact same guest-User-creation shape and initial-
+ * status lookup Admin\VisaManagementController::store() already uses, so
+ * a visa application looks identical in Visa Management regardless of
+ * whether Admin or a public visitor created it — one system, not two.
+ *
+ * Documents stay email-attachment-only for now — real Document
+ * persistence is explicitly Stage 5 of this build, not this one. Nothing
+ * here pretends otherwise; the files are still delivered (as attachments),
+ * just not yet wired into the Document system Admin will eventually
+ * review them through.
  */
 class VisaApplicationController extends Controller
 {
@@ -73,55 +81,112 @@ class VisaApplicationController extends Controller
             'declaration_consent' => ['accepted'],
         ]);
 
-        // Read every uploaded file's bytes into memory NOW, while the
-        // request (and therefore the temp upload) is still alive — see
-        // AdminNotificationMail's own docblock for why this can't just
-        // pass along getRealPath() instead.
+        // Same "never silently attach to someone else's identity" rule as
+        // Jobs/Study/Hire — but visa_applicant has no portal to redirect
+        // to and back from (no login-then-resume flow exists yet, since
+        // Workspace integration is a later stage), so this stays a plain
+        // validation failure with a clear next step, not a login redirect.
+        if (User::where('email', $data['email'])->exists()) {
+            return back()->withErrors([
+                'email' => 'An account already exists with this email. Please contact us directly so we can attach this application to your existing record.',
+            ])->withInput($request->except(array_keys($request->allFiles())));
+        }
+
+        // Same guest-User shape as Admin\VisaManagementController::store()'s
+        // standalone branch — a random password, since visa_applicant has
+        // no portal to log into with one.
+        $guest = User::create([
+            'name' => trim("{$data['first_name']} {$data['last_name']}"),
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'password' => Hash::make(Str::random(32)),
+            'is_active' => true,
+        ]);
+        $guest->assignRole('visa_applicant');
+
+        $initialStatusId = StatusTransition::where('status_type', 'visa')->whereNull('from_status_id')->value('to_status_id');
+
+        $visaApplication = VisaApplication::create([
+            'user_id' => $guest->id,
+            'status_id' => $initialStatusId,
+
+            'first_name' => $data['first_name'],
+            'middle_name' => $data['middle_name'] ?? null,
+            'last_name' => $data['last_name'],
+            'date_of_birth' => $data['date_of_birth'],
+            'gender' => $data['gender'],
+            'nationality' => $data['nationality'],
+            'country_of_residence' => $data['country_of_residence'],
+            'passport_number' => $data['passport_number'],
+            'passport_expiry' => $data['passport_expiry'],
+
+            'destination_country' => $data['destination_country'],
+            'purpose_of_travel' => $data['purpose_of_travel'],
+            'expected_travel_date' => $data['expected_travel_date'] ?? null,
+            'duration_of_stay' => $data['duration_of_stay'] ?? null,
+            'has_admission_letter' => $data['has_admission_letter'] ?? null,
+            'has_employment_contract' => $data['has_employment_contract'] ?? null,
+            'has_invitation_letter' => $data['has_invitation_letter'] ?? null,
+
+            'visa_type' => $data['visa_type'],
+            'previously_applied' => $data['previously_applied'] ?? null,
+            'previously_refused' => $data['previously_refused'] ?? null,
+            'refusal_explanation' => $data['refusal_explanation'] ?? null,
+            'travelled_internationally' => $data['travelled_internationally'] ?? null,
+            'countries_visited' => $data['countries_visited'] ?? null,
+            'additional_info' => $data['additional_info'] ?? null,
+        ]);
+
+        // Stage 5 — every uploaded file becomes a REAL Document now, not
+        // just an email attachment. Vault-level (student_id = guest's own
+        // account, no application scope — matches VisaApplication::
+        // documentsQuery()'s "guest" branch exactly), status 'under_review'
+        // since it's genuinely already uploaded, not merely requested.
+        $visaCategoryId = DocumentCategory::where('name', 'Visa Documents')->value('id');
+
         $fileFields = [
-            'passport', 'passport_photo', 'admission_letter', 'employment_contract',
-            'invitation_letter', 'bank_statement', 'academic_certificates', 'additional_documents',
+            'passport' => 'Passport',
+            'passport_photo' => 'Passport Photo',
+            'admission_letter' => 'Admission Letter',
+            'employment_contract' => 'Employment Contract',
+            'invitation_letter' => 'Invitation Letter',
+            'bank_statement' => 'Bank Statement',
+            'academic_certificates' => 'Academic Certificates',
+            'additional_documents' => 'Additional Documents',
         ];
 
-        $attachments = collect($fileFields)
-            ->filter(fn ($field) => $request->hasFile($field))
-            ->map(function ($field) use ($request) {
-                $file = $request->file($field);
+        foreach ($fileFields as $field => $label) {
+            if (! $request->hasFile($field)) {
+                continue;
+            }
 
-                return [
-                    'content' => $file->get(),
-                    'name' => str($field)->headline().' - '.$file->getClientOriginalName(),
-                    'mime' => $file->getClientMimeType(),
-                ];
-            })
-            ->values()
-            ->all();
+            $file = $request->file($field);
+            $path = $file->store("documents/{$guest->id}", 'public');
 
-        Mail::to(config('notifications.info_email'))->send(new AdminNotificationMail(
-            heading: 'New Visa Application Inquiry',
-            lines: array_filter([
-                'Name' => trim("{$data['first_name']} {$data['middle_name']} {$data['last_name']}"),
-                'Date of Birth' => $data['date_of_birth'],
-                'Gender' => $data['gender'],
-                'Nationality' => $data['nationality'],
-                'Country of Residence' => $data['country_of_residence'],
-                'Passport Number' => $data['passport_number'],
-                'Passport Expiry' => $data['passport_expiry'],
-                'Phone' => $data['phone'],
-                'Email' => $data['email'],
-                'Destination Country' => $data['destination_country'],
-                'Purpose of Travel' => $data['purpose_of_travel'],
+            $document = Document::create([
+                'student_id' => $guest->id,
+                'document_category_id' => $visaCategoryId,
+                'name' => $label,
+                'status' => 'required',
+            ]);
+
+            app(\App\Services\DocumentVerificationService::class)
+                ->markUploaded($document, $path, $file->getClientMimeType(), $file->getSize());
+        }
+
+        // Light notification — a real, persisted record now exists for
+        // Admin to review properly in Visa Management (documents included,
+        // via the link below), so there's no reason to duplicate every
+        // field — or the files themselves — into the email body too.
+        Mail::to(config('notifications.admin_email'))->send(new AdminNotificationMail(
+            heading: 'New Visa Application Submitted',
+            lines: [
+                'Applicant' => $guest->name,
+                'Destination' => $data['destination_country'],
                 'Visa Type' => $data['visa_type'],
-                'Expected Travel Date' => $data['expected_travel_date'] ?? null,
-                'Duration of Stay' => $data['duration_of_stay'] ?? null,
-                'Previously Applied for This Visa' => $data['previously_applied'] ?? null,
-                'Previously Refused a Visa' => $data['previously_refused'] ?? null,
-                'Refusal Explanation' => $data['refusal_explanation'] ?? null,
-                'Travelled Internationally Before' => $data['travelled_internationally'] ?? null,
-                'Countries Visited' => $data['countries_visited'] ?? null,
-                'Additional Info' => $data['additional_info'] ?? null,
-                'Documents Attached' => count($attachments).' file(s) — see attachments',
-            ]),
-            fileAttachments: $attachments,
+            ],
+            actionLabel: 'Review Visa Application',
+            actionUrl: route('admin.visa-management.show', $visaApplication),
         ));
 
         return redirect()->route('public.visa-application-form')->with('success', true);

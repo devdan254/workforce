@@ -15,6 +15,23 @@ use App\Models\VisaApplication;
  */
 class VisaApplicationPolicy
 {
+    /**
+     * Only staff reach the central Visa Management list at all — a
+     * Student/Job Seeker views their own visa through their Workspace
+     * (view() below), not this list. No per-row check needed here since
+     * the list itself is filtered to what the viewing staff member should
+     * see at the query level, same pattern as every other Admin index.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->can('visa.view');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->can('visa.create');
+    }
+
     public function view(User $user, VisaApplication $visa): bool
     {
         if ($user->isStudent()) {
