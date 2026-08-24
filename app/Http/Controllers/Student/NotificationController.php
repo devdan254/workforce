@@ -17,7 +17,18 @@ class NotificationController extends Controller
 {
     public function index(Request $request): View
     {
-        $notifications = $request->user()->notifications()->paginate(15);
+        $query = $request->user()->notifications();
+
+        // Optional — every existing caller (Student/Job Seeker/Employer/
+        // Admin's own sidebar link) omits this and sees everything exactly
+        // as before. Only the dashboard's new Unread/Read breakdown links
+        // pass it, to land on a genuinely filtered view rather than the
+        // full list.
+        if ($request->filled('read')) {
+            $request->boolean('read') ? $query->whereNotNull('read_at') : $query->whereNull('read_at');
+        }
+
+        $notifications = $query->paginate(15)->withQueryString();
 
         $view = $this->viewFor($request->user());
 

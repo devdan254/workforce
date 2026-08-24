@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 
 /**
  * The one unified, cross-role view of every account in the system —
@@ -27,6 +29,18 @@ use Illuminate\View\View;
  */
 class UserManagementController extends Controller
 {
+    /**
+     * Deliberately excludes super_admin itself — even the id===1 account
+     * shouldn't be able to mint additional super_admins through a simple
+     * checkbox form. Creating a second true super_admin is significant
+     * enough that it belongs at the database/seeder level, not something
+     * this UI casually offers as one option among nine.
+     */
+    private const ASSIGNABLE_STAFF_ROLES = [
+        'admin_officer', 'education_officer', 'finance_officer', 'visa_officer',
+        'support_officer', 'sales_officer', 'recruitment_officer', 'hr_outsourcing_officer',
+    ];
+
     public function index(Request $request): View
     {
         $this->authorize('viewAnyUsers', User::class);
@@ -59,7 +73,11 @@ class UserManagementController extends Controller
     {
         $this->authorize($this->editAbilityFor($user), $user);
 
-        return view('admin.users.edit', ['targetUser' => $user]);
+        return view('admin.users.edit', [
+            'targetUser' => $user,
+            'assignableRoles' => self::ASSIGNABLE_STAFF_ROLES,
+            'canManageRoles' => auth()->id() === 1 && $user->isStaff() && ! $user->hasRole('super_admin'),
+        ]);
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -74,7 +92,48 @@ class UserManagementController extends Controller
 
         $user->update($request->only('name', 'email', 'phone'));
 
+        // Role reassignment is a genuinely separate concern from the basic
+        // account fields above — gated independently here (not just by
+        // editAbilityFor()'s updateStaff check) so a stray 'roles' field
+        // in a request can never reassign anyone's access unless the
+        // actor is actually id === 1, regardless of what else is true.
+        if (auth()->id() === 1 && $user->isStaff() && ! $user->hasRole('super_admin')) {
+            $selectedRoles = array_intersect($request->input('roles', []), self::ASSIGNABLE_STAFF_ROLES);
+            $user->syncRoles($selectedRoles);
+        }
+
         return redirect()->route('admin.users.index')->with('success', "{$user->name}'s account has been updated.");
+    }
+
+    public function createStaff(): View
+    {
+        $this->authorize('manageStaffAccounts', User::class);
+
+        return view('admin.users.create-staff', ['assignableRoles' => self::ASSIGNABLE_STAFF_ROLES]);
+    }
+
+    public function storeStaff(Request $request): RedirectResponse
+    {
+        $this->authorize('manageStaffAccounts', User::class);
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'roles' => ['required', 'array', 'min:1'],
+            'roles.*' => ['string', 'in:'.implode(',', self::ASSIGNABLE_STAFF_ROLES)],
+        ]);
+
+        $staff = User::create([
+            'name' => $request->string('name'),
+            'email' => $request->string('email'),
+            'password' => Hash::make($request->string('password')),
+            'is_active' => true,
+        ]);
+
+        $staff->assignRole($request->input('roles'));
+
+        return redirect()->route('admin.users.index')->with('success', "{$staff->name}'s staff account has been created.");
     }
 
     public function toggleActive(User $user): RedirectResponse

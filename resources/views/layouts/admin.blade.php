@@ -11,44 +11,50 @@
                 <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                     <i class="fa-solid fa-gauge"></i>Dashboard
                 </a>
+                                <a class="nav-link {{ request()->routeIs('admin.payments-management.*') ? 'active' : '' }}" href="{{ route('admin.payments-management.index') }}">
+                    <i class="fa-solid fa-money-bill-wave"></i>Payments
+                </a>
+
+                <a class="nav-link {{ request()->routeIs('admin.visa-management.*') ? 'active' : '' }}" href="{{ route('admin.visa-management.index') }}">
+                    <i class="fa-solid fa-passport"></i>VISA Management
+                </a>
+
                 <a class="nav-link {{ request()->routeIs('admin.onboarding.*') ? 'active' : '' }}" href="{{ route('admin.onboarding.index') }}">
                     <i class="fa-solid fa-user-plus"></i>Onboarding
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" href="{{ route('admin.students.index') }}">
-                    <i class="fa-solid fa-users"></i>Students
+                <a class="nav-link {{ request()->routeIs('admin.job-postings.*') ? 'active' : '' }}" href="{{ route('admin.job-postings.index') }}">
+                    <i class="fa-solid fa-list-check"></i>Job Postings
+                </a>                
+                <a class="nav-link {{ request()->routeIs('admin.study-postings.*') ? 'active' : '' }}" href="{{ route('admin.study-postings.index') }}">
+                    <i class="fa-solid fa-graduation-cap"></i>Study Postings
+               </a>
+
+                <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}">
+                    <i class="fa-solid fa-people-arrows"></i>Worker Requests
                 </a>
                 <a class="nav-link {{ request()->routeIs('admin.job-seekers.*') ? 'active' : '' }}" href="{{ route('admin.job-seekers.index') }}">
                     <i class="fa-solid fa-briefcase"></i>Job Seekers
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.job-postings.*') ? 'active' : '' }}" href="{{ route('admin.job-postings.index') }}">
-                    <i class="fa-solid fa-list-check"></i>Job Postings
+                <a class="nav-link {{ request()->routeIs('admin.employers.*') ? 'active' : '' }}" href="{{ route('admin.employers.index') }}">
+                    <i class="fa-solid fa-building"></i>Employers
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.study-postings.*') ? 'active' : '' }}" href="{{ route('admin.study-postings.index') }}">
-                    <i class="fa-solid fa-graduation-cap"></i>Study Postings
+                <a class="nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" href="{{ route('admin.students.index') }}">
+                    <i class="fa-solid fa-users"></i>Students
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.visa-management.*') ? 'active' : '' }}" href="{{ route('admin.visa-management.index') }}">
-                    <i class="fa-solid fa-passport"></i>Visa Management
-                </a>
-                <a class="nav-link {{ request()->routeIs('admin.payments-management.*') ? 'active' : '' }}" href="{{ route('admin.payments-management.index') }}">
-                    <i class="fa-solid fa-money-bill-wave"></i>Payments Management
-                </a>
-                <a class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}" href="{{ route('admin.resources.index') }}">
-                    <i class="fa-solid fa-book-open"></i>Resources
+
+                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
+                    <i class="fa-solid fa-users-gear"></i>All Users
                 </a>
                 <a class="nav-link {{ request()->routeIs('admin.support.*') ? 'active' : '' }}" href="{{ route('admin.support.index') }}">
                     <i class="fa-solid fa-headset"></i>Support Tickets
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
-                    <i class="fa-solid fa-users-gear"></i>All Users
+
+                <a class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}" href="{{ route('admin.resources.index') }}">
+                    <i class="fa-solid fa-book-open"></i>Resources
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}">
-                    <i class="fa-solid fa-people-arrows"></i>Worker Requests
-                </a>
-                <a class="nav-link {{ request()->routeIs('admin.employers.*') ? 'active' : '' }}" href="{{ route('admin.employers.index') }}">
-                    <i class="fa-solid fa-building"></i>Employers
-                </a>
-                {{-- Remaining Admin sections (Tickets queue, Tasks, Resources management, etc.)
-                     land here as later deliverables build them out. --}}
+
+
+
             </nav>
 
             <div class="text-white-50 small px-1 mb-2">

@@ -155,12 +155,12 @@ class UserPolicy
 
     public function updateStaff(User $user, User $staff): bool
     {
-        return $user->can('users.manage');
+        return $user->id === 1;
     }
 
     public function suspendStaff(User $user, User $staff): bool
     {
-        return $user->can('users.manage');
+        return $user->id === 1;
     }
 
     public function deleteAny(User $user, User $target): bool
@@ -173,7 +173,24 @@ class UserPolicy
             $target->isStudent() => $user->can('students.delete'),
             $target->isJobSeeker() => $user->can('job_seekers.delete'),
             $target->isEmployer() => $user->can('employers.delete'),
-            default => $user->can('users.manage'),
+            default => $user->id === 1,
         };
+    }
+
+    /**
+     * Creating staff accounts and reassigning roles/permissions are
+     * deliberately restricted to the one specific account with id === 1,
+     * not "any user holding the super_admin role" — even though every
+     * super_admin already has every permission via
+     * syncPermissions(Permission::all()), that's exactly the risk this
+     * guards against: if any super_admin could create or promote other
+     * super_admins, a single compromised or rogue account could escalate
+     * itself or others indefinitely. id === 1 designates one founding
+     * account as the sole place that escalation path runs through —
+     * explicit per the request, not inferred from a role check.
+     */
+    public function manageStaffAccounts(User $user): bool
+    {
+        return $user->id === 1;
     }
 }

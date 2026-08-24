@@ -4,7 +4,12 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <h2 class="h4 fw-semibold mb-4" style="font-family:'Poppins',sans-serif;color:#082159;">All Users</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 fw-semibold mb-0" style="font-family:'Poppins',sans-serif;color:#082159;">All Users</h2>
+        @can('manageStaffAccounts', \App\Models\User::class)
+            <a href="{{ route('admin.users.staff.create') }}" class="btn btn-primary">+ Create Staff Account</a>
+        @endcan
+    </div>
 
     <div class="card stat-card p-3 mb-4">
         <form method="GET" action="{{ route('admin.users.index') }}" class="row g-2 align-items-end">

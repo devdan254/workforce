@@ -2,7 +2,7 @@
 
     <div class="mb-4">
         <h2 class="h4 fw-semibold mb-1" style="font-family:'Poppins',sans-serif;color:#082159;">Welcome back, {{ explode(' ', auth()->user()->name)[0] }}!</h2>
-        <p class="text-secondary mb-0">Here's a 360° overview of Altura Workforce Solutions right now.</p>
+        <p class="text-secondary mb-0">Overview of Altura Workforce Solutions.</p>
     </div>
 
     {{-- ============ ROW 1 — FINANCIAL OVERVIEW ============ --}}
@@ -132,20 +132,38 @@
             </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <a href="{{ route('admin.support.index') }}" class="text-decoration-none">
-                <div class="card stat-card p-3 h-100">
-                    <div class="stat-label">Open Tickets</div>
-                    <div class="stat-value">{{ number_format($openTicketsCount) }}</div>
-                </div>
-            </a>
+            <div class="card stat-card p-3 h-100">
+                <div class="stat-label mb-2">Support Tickets</div>
+                <a href="{{ route('admin.support.index', ['status' => 'open']) }}" class="d-flex justify-content-between text-decoration-none small mb-1">
+                    <span class="text-secondary">Open</span>
+                    <span class="fw-semibold">{{ str_pad($ticketBreakdown['Open'], 2, '0', STR_PAD_LEFT) }}</span>
+                </a>
+                <a href="{{ route('admin.support.index', ['status' => ['in_progress', 'waiting_for_student']]) }}" class="d-flex justify-content-between text-decoration-none small mb-1">
+                    <span class="text-secondary">In Progress</span>
+                    <span class="fw-semibold">{{ str_pad($ticketBreakdown['In Progress'], 2, '0', STR_PAD_LEFT) }}</span>
+                </a>
+                <a href="{{ route('admin.support.index', ['status' => 'resolved']) }}" class="d-flex justify-content-between text-decoration-none small mb-1">
+                    <span class="text-secondary">Resolved</span>
+                    <span class="fw-semibold">{{ str_pad($ticketBreakdown['Resolved'], 2, '0', STR_PAD_LEFT) }}</span>
+                </a>
+                <a href="{{ route('admin.support.index', ['status' => 'closed']) }}" class="d-flex justify-content-between text-decoration-none small">
+                    <span class="text-secondary">Closed</span>
+                    <span class="fw-semibold">{{ str_pad($ticketBreakdown['Closed'], 2, '0', STR_PAD_LEFT) }}</span>
+                </a>
+            </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <a href="{{ route('admin.notifications.index') }}" class="text-decoration-none">
-                <div class="card stat-card p-3 h-100">
-                    <div class="stat-label">Notifications</div>
-                    <div class="stat-value">{{ number_format($unreadNotificationsCount) }}</div>
-                </div>
-            </a>
+            <div class="card stat-card p-3 h-100">
+                <div class="stat-label mb-2">Notifications</div>
+                <a href="{{ route('admin.notifications.index', ['read' => 0]) }}" class="d-flex justify-content-between text-decoration-none small mb-1">
+                    <span class="text-secondary">Unread</span>
+                    <span class="fw-semibold">{{ str_pad($notificationBreakdown['Unread'], 2, '0', STR_PAD_LEFT) }}</span>
+                </a>
+                <a href="{{ route('admin.notifications.index', ['read' => 1]) }}" class="d-flex justify-content-between text-decoration-none small">
+                    <span class="text-secondary">Read</span>
+                    <span class="fw-semibold">{{ str_pad($notificationBreakdown['Read'], 2, '0', STR_PAD_LEFT) }}</span>
+                </a>
+            </div>
         </div>
     </div>
 

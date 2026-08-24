@@ -27,8 +27,15 @@ class SupportTicketController extends Controller
 
         $query = SupportTicket::with(['student', 'assignedTo']);
 
+        // Accepts either a single value (?status=open) or multiple
+        // (?status[]=in_progress&status[]=waiting_for_student) — the
+        // dashboard's "In Progress" breakdown genuinely combines two
+        // statuses into one bucket, so its CTA needs to filter by both at
+        // once. Backward compatible: (array) on a plain string just
+        // produces a one-element array, so every existing single-status
+        // link still behaves exactly as before.
         if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
+            $query->whereIn('status', (array) $request->input('status'));
         }
         if ($request->filled('priority')) {
             $query->where('priority', $request->string('priority'));

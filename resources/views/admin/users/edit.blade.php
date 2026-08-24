@@ -36,6 +36,19 @@
                 <input type="text" name="phone" class="form-control" value="{{ old('phone', $targetUser->phone) }}">
             </div>
 
+            @if($canManageRoles)
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Roles &amp; Permissions</label>
+                    <p class="small text-secondary mb-2">Only the primary Super Admin account can reassign staff roles.</p>
+                    @foreach($assignableRoles as $role)
+                        <div class="form-check">
+                            <input type="checkbox" name="roles[]" value="{{ $role }}" class="form-check-input" id="role-{{ $role }}" @checked($targetUser->hasRole($role))>
+                            <label class="form-check-label small" for="role-{{ $role }}">{{ ucwords(str_replace('_', ' ', $role)) }}</label>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
             <button type="submit" class="btn btn-primary">Save Changes</button>
             <a href="{{ route('admin.users.index') }}" class="btn btn-light">Cancel</a>
         </form>

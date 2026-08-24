@@ -123,13 +123,25 @@ class DashboardController extends Controller
             'Employers' => (clone $upcomingAppointmentsQuery())->whereHas('student', fn ($q) => $q->role('employer'))->count(),
         ];
 
+        $ticketBreakdown = [
+            'Open' => SupportTicket::where('status', 'open')->count(),
+            'In Progress' => SupportTicket::whereIn('status', ['in_progress', 'waiting_for_student'])->count(),
+            'Resolved' => SupportTicket::where('status', 'resolved')->count(),
+            'Closed' => SupportTicket::where('status', 'closed')->count(),
+        ];
+
+        $notificationBreakdown = [
+            'Unread' => auth()->user()->unreadNotifications->count(),
+            'Read' => auth()->user()->readNotifications->count(),
+        ];
+
         return [
             'userBreakdown' => $userBreakdown,
             'allUsersCount' => User::count(),
             'appointmentBreakdown' => $appointmentBreakdown,
             'upcomingAppointmentsCount' => array_sum($appointmentBreakdown),
-            'openTicketsCount' => SupportTicket::whereNotIn('status', ['resolved', 'closed'])->count(),
-            'unreadNotificationsCount' => auth()->user()->unreadNotifications->count(),
+            'ticketBreakdown' => $ticketBreakdown,
+            'notificationBreakdown' => $notificationBreakdown,
         ];
     }
 

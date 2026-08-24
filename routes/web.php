@@ -520,6 +520,8 @@ Route::middleware([
         Route::delete('/resources/{resource}', [AdminResourceController::class, 'destroy'])->name('resources.destroy');
 
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::get('/users/staff/create', [UserManagementController::class, 'createStaff'])->name('users.staff.create');
+        Route::post('/users/staff', [UserManagementController::class, 'storeStaff'])->name('users.staff.store');
         Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
         Route::patch('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
         Route::post('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle-active');
