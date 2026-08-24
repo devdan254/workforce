@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +59,21 @@ class RegisteredUserController extends Controller
         $user->assignRole($request->input('role'));
 
         event(new Registered($user));
+
+        AdminAlertNotification::sendToAdmins(
+            heading: 'New '.ucwords(str_replace('_', ' ', $request->input('role'))).' Registered',
+            lines: [
+                'Name' => $user->name,
+                'Email' => $user->email,
+                'Account Type' => ucwords(str_replace('_', ' ', $request->input('role'))),
+            ],
+            actionLabel: 'View in Admin',
+            actionUrl: match ($request->input('role')) {
+                'job_seeker' => route('admin.job-seekers.show', $user),
+                'employer' => route('admin.employers.show', $user),
+                default => route('admin.students.show', $user),
+            },
+        );
 
         Auth::login($user);
 

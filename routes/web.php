@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\JobPostingController as AdminJobPostingController;
 use App\Http\Controllers\Admin\ResourceController as AdminResourceController;
+use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
 use App\Http\Controllers\Admin\StudyPostingController as AdminStudyPostingController;
 use App\Http\Controllers\Admin\VisaManagementController;
@@ -516,6 +518,22 @@ Route::middleware([
         Route::get('/resources/{resource}/edit', [AdminResourceController::class, 'edit'])->name('resources.edit');
         Route::patch('/resources/{resource}', [AdminResourceController::class, 'update'])->name('resources.update');
         Route::delete('/resources/{resource}', [AdminResourceController::class, 'destroy'])->name('resources.destroy');
+
+        Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
+        Route::patch('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
+        Route::post('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle-active');
+        Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read_all');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+
+        Route::get('/support', [AdminSupportTicketController::class, 'index'])->name('support.index');
+        Route::get('/support/{ticket}', [AdminSupportTicketController::class, 'show'])->name('support.show');
+        Route::post('/support/{ticket}/reply', [AdminSupportTicketController::class, 'reply'])->name('support.reply');
+        Route::post('/support/{ticket}/close', [AdminSupportTicketController::class, 'close'])->name('support.close');
+        Route::post('/support/{ticket}/assign', [AdminSupportTicketController::class, 'assignToMe'])->name('support.assign');
 
         /*
         |----------------------------------------------------------------

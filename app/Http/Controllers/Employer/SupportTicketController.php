@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employer\StoreSupportTicketRequest;
 use App\Models\SupportTicket;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -48,6 +49,18 @@ class SupportTicketController extends Controller
             'user_id' => $request->user()->id,
             'body' => $request->string('message'),
         ]);
+
+        AdminAlertNotification::sendToAdmins(
+            heading: 'New Support Ticket — Employer',
+            lines: [
+                'Employer' => $request->user()->employerProfile?->company_name ?? $request->user()->name,
+                'Ticket' => $ticket->ticket_number,
+                'Subject' => $ticket->subject,
+                'Priority' => ucfirst($ticket->priority),
+            ],
+            actionLabel: 'View Ticket',
+            actionUrl: route('admin.support.show', $ticket),
+        );
 
         return redirect()
             ->route('employer.support.show', $ticket)

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\JobSeeker\StorePaymentRequest;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Notifications\AdminAlertNotification;
 use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,18 @@ class PaymentController extends Controller
                 'status' => 'pending',
             ]);
         }
+
+        AdminAlertNotification::sendToAdmins(
+            heading: 'New Payment Submitted — Job Seeker',
+            lines: [
+                'Job Seeker' => $request->user()->name,
+                'Invoice' => $invoice->invoice_number,
+                'Amount' => $invoice->currency.' '.number_format((float) $request->input('amount'), 2),
+                'Method' => ucfirst(str_replace('_', ' ', $request->string('method'))),
+            ],
+            actionLabel: 'Review Payment',
+            actionUrl: route('admin.payments-management.index'),
+        );
 
         return redirect()
             ->route('job-seeker.invoices.show', $invoice)

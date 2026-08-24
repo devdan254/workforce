@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\Status;
 use App\Models\StudyApplication;
 use App\Models\University;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -94,6 +95,19 @@ class ApplicationController extends Controller
             'currency' => 'KES', // Altura's own fees are invoiced in KES regardless of the course's tuition currency
             'submitted_at' => now(),
         ]);
+
+        AdminAlertNotification::sendToAdmins(
+            heading: 'New Study Abroad Application Received',
+            lines: [
+                'Student' => $request->user()->name,
+                'Email' => $request->user()->email,
+                'University' => $application->university->name,
+                'Course' => $course->name,
+                'Reference' => $application->reference_number ?? "#{$application->id}",
+            ],
+            actionLabel: 'Review Application',
+            actionUrl: route('admin.students.show', $request->user()->id),
+        );
 
         return redirect()
             ->route('student.applications.show', $application)

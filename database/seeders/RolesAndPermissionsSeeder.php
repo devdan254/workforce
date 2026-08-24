@@ -34,7 +34,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'activity.view',
 
             // ---- Stage 2: Job Seeker ----
-            'job_seekers.view', 'job_seekers.create', 'job_seekers.update',
+            'job_seekers.view', 'job_seekers.create', 'job_seekers.update', 'job_seekers.delete',
             'job_applications.view', 'job_applications.create', 'job_applications.update', 'job_applications.change_status',
             'job_postings.view', 'job_postings.create', 'job_postings.update', 'job_postings.publish',
             // documents.*, payments.*, invoices.*, appointments.*, tasks.* are ALREADY reused
@@ -42,7 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // matching the spec's explicit "do not create a second document/payment/etc system."
 
             // ---- Stage 3: Employer ----
-            'employers.view', 'employers.create', 'employers.update',
+            'employers.view', 'employers.create', 'employers.update', 'employers.delete',
             'worker_requests.view', 'worker_requests.create', 'worker_requests.update', 'worker_requests.review',
             // documents.*/payments.*/invoices.*/appointments.*/tickets.*/tasks.* reused unmodified
             // again — same reasoning as Job Seeker.
@@ -57,6 +57,19 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // ---- Study Postings (Student-side equivalent of Job Postings) ----
             'study_postings.view', 'study_postings.create', 'study_postings.update', 'study_postings.publish',
+
+            // ---- All Users (Admin Dashboard) — managing STAFF accounts
+            // specifically. Student/Job Seeker/Employer rows on that same
+            // page reuse their existing students.*/job_seekers.*/
+            // employers.* permissions above, unchanged — this one exists
+            // only because nothing previously covered one staff member
+            // editing/suspending/deleting ANOTHER staff account. Master
+            // list only (super_admin gets it automatically via
+            // Permission::all() below); deliberately not granted to
+            // admin_officer or any other role — managing colleagues'
+            // accounts is a higher-privilege action than managing
+            // Students/Job Seekers/Employers.
+            'users.manage',
         ];
 
         foreach ($permissions as $permission) {

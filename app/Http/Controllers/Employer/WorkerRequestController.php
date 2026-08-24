@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Employer\RespondToWorkerRequestRequest;
 use App\Http\Requests\Employer\StoreWorkerRequestRequest;
 use App\Models\WorkerRequest;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -58,6 +59,16 @@ class WorkerRequestController extends Controller
             'additional_requirements' => $request->input('additional_requirements'),
             'status' => 'submitted',
         ]);
+
+        AdminAlertNotification::sendToAdmins(
+            heading: 'New Worker Request Submitted',
+            lines: [
+                'Company' => $employer->employerProfile?->company_name ?? $employer->name,
+                'Submitted By' => $employer->name,
+            ],
+            actionLabel: 'Review Worker Request',
+            actionUrl: route('admin.worker-requests.show', $workerRequest),
+        );
 
         return redirect()
             ->route('employer.worker-requests.index')

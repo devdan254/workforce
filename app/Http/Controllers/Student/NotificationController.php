@@ -65,6 +65,7 @@ class NotificationController extends Controller
     private function routeNameFor($user): string
     {
         return match (true) {
+            $user->isStaff() => 'admin.',
             $user->isJobSeeker() => 'job-seeker.',
             $user->isEmployer() => 'employer.',
             default => 'student.',

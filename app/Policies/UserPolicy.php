@@ -135,4 +135,45 @@ class UserPolicy
     {
         return $user->can('employers.update');
     }
+
+    /* ---------- All Users (Admin Dashboard) ----------
+     * The unified cross-role page reuses every ability above for Student/
+     * Job Seeker/Employer rows unchanged — same authorization boundary as
+     * their existing Workspace pages, nothing new granted there. These
+     * exist only for the one genuinely new case: a staff/admin account
+     * managing ANOTHER staff/admin account, which nothing previously
+     * covered. deleteAny() additionally hard-blocks super_admin
+     * specifically, regardless of who's asking — including another
+     * super_admin — so the last one can never be removed by mistake.
+     */
+
+    public function viewAnyUsers(User $user): bool
+    {
+        return $user->can('students.view') || $user->can('job_seekers.view')
+            || $user->can('employers.view') || $user->can('users.manage');
+    }
+
+    public function updateStaff(User $user, User $staff): bool
+    {
+        return $user->can('users.manage');
+    }
+
+    public function suspendStaff(User $user, User $staff): bool
+    {
+        return $user->can('users.manage');
+    }
+
+    public function deleteAny(User $user, User $target): bool
+    {
+        if ($target->hasRole('super_admin')) {
+            return false;
+        }
+
+        return match (true) {
+            $target->isStudent() => $user->can('students.delete'),
+            $target->isJobSeeker() => $user->can('job_seekers.delete'),
+            $target->isEmployer() => $user->can('employers.delete'),
+            default => $user->can('users.manage'),
+        };
+    }
 }

@@ -35,6 +35,12 @@
                 <a class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}" href="{{ route('admin.resources.index') }}">
                     <i class="fa-solid fa-book-open"></i>Resources
                 </a>
+                <a class="nav-link {{ request()->routeIs('admin.support.*') ? 'active' : '' }}" href="{{ route('admin.support.index') }}">
+                    <i class="fa-solid fa-headset"></i>Support Tickets
+                </a>
+                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
+                    <i class="fa-solid fa-users-gear"></i>All Users
+                </a>
                 <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}">
                     <i class="fa-solid fa-people-arrows"></i>Worker Requests
                 </a>
@@ -68,21 +74,50 @@
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <h1 class="h5 mb-0 fw-semibold" style="font-family: 'Poppins', sans-serif; color: #082159;">{{ $title ?? 'Dashboard' }}</h1>
-                <div class="dropdown">
-                    <button class="btn btn-light d-flex align-items-center gap-2" data-bs-toggle="dropdown">
-                        <span class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:.8rem;">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                        </span>
-                        <span class="d-none d-sm-inline">{{ auth()->user()->name }}</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="dropdown-item">Log Out</button>
-                            </form>
-                        </li>
-                    </ul>
+                <div class="d-flex align-items-center gap-2">
+                    @php $unreadNotifications = auth()->user()->unreadNotifications; @endphp
+                    <div class="dropdown">
+                        <button class="btn btn-light position-relative" data-bs-toggle="dropdown" aria-label="Notifications">
+                            <i class="fa-solid fa-bell"></i>
+                            @if($unreadNotifications->count() > 0)
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem;">
+                                    {{ $unreadNotifications->count() > 9 ? '9+' : $unreadNotifications->count() }}
+                                </span>
+                            @endif
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px;max-height:420px;overflow-y:auto;">
+                            <div class="px-3 py-2 border-bottom fw-semibold small" style="font-family:'Poppins',sans-serif;">Notifications</div>
+                            @forelse($unreadNotifications->take(5) as $notification)
+                                <form method="POST" action="{{ route('admin.notifications.read', $notification->id) }}" class="d-flex align-items-start gap-2 px-3 py-2 border-bottom bg-primary-subtle bg-opacity-10">
+                                    @csrf
+                                    <i class="fa-solid fa-{{ $notification->data['icon'] ?? 'bell' }} text-primary mt-1"></i>
+                                    <button type="submit" class="btn btn-link text-start text-decoration-none p-0 flex-grow-1">
+                                        <div class="fw-semibold small text-dark">{{ $notification->data['title'] ?? 'Notification' }}</div>
+                                        <div class="text-secondary" style="font-size:.75rem;">{{ $notification->created_at->diffForHumans() }}</div>
+                                    </button>
+                                </form>
+                            @empty
+                                <div class="px-3 py-4 text-center text-secondary small">You're all caught up.</div>
+                            @endforelse
+                            <a href="{{ route('admin.notifications.index') }}" class="d-block text-center py-2 small border-top">View All Notifications</a>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-light d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                            <span class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:.8rem;">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            </span>
+                            <span class="d-none d-sm-inline">{{ auth()->user()->name }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item">Log Out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </header>
 
@@ -109,6 +144,8 @@
                 <a class="nav-link {{ request()->routeIs('admin.visa-management.*') ? 'active' : '' }}" href="{{ route('admin.visa-management.index') }}"><i class="fa-solid fa-passport"></i>Visa Management</a>
                 <a class="nav-link {{ request()->routeIs('admin.payments-management.*') ? 'active' : '' }}" href="{{ route('admin.payments-management.index') }}"><i class="fa-solid fa-money-bill-wave"></i>Payments Management</a>
                 <a class="nav-link {{ request()->routeIs('admin.resources.*') ? 'active' : '' }}" href="{{ route('admin.resources.index') }}"><i class="fa-solid fa-book-open"></i>Resources</a>
+                <a class="nav-link {{ request()->routeIs('admin.support.*') ? 'active' : '' }}" href="{{ route('admin.support.index') }}"><i class="fa-solid fa-headset"></i>Support Tickets</a>
+                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}"><i class="fa-solid fa-users-gear"></i>All Users</a>
                 <a class="nav-link {{ request()->routeIs('admin.worker-requests.*') ? 'active' : '' }}" href="{{ route('admin.worker-requests.index') }}"><i class="fa-solid fa-people-arrows"></i>Worker Requests</a>
                 <a class="nav-link {{ request()->routeIs('admin.employers.*') ? 'active' : '' }}" href="{{ route('admin.employers.index') }}"><i class="fa-solid fa-building"></i>Employers</a>
             </nav>

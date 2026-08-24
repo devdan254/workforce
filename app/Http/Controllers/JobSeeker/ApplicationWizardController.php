@@ -4,19 +4,18 @@ namespace App\Http\Controllers\JobSeeker;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\JobSeeker\StoreWizardStepRequest;
-use App\Mail\AdminNotificationMail;
 use App\Models\Document;
 use App\Models\DocumentCategory;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\Status;
+use App\Notifications\AdminAlertNotification;
 use App\Services\ApplicationStatusService;
 use App\Services\CvParsingService;
 use App\Services\DocumentVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -255,7 +254,7 @@ class ApplicationWizardController extends Controller
         // notification belongs, not at account-registration time, since a
         // guest who only creates an account (no job yet, e.g. talent pool)
         // hasn't actually submitted an application yet.
-        Mail::to(config('notifications.admin_email'))->send(new AdminNotificationMail(
+        AdminAlertNotification::sendToAdmins(
             heading: 'New Job Application Received',
             lines: [
                 'Applicant' => $user->name,
@@ -266,7 +265,7 @@ class ApplicationWizardController extends Controller
             ],
             actionLabel: 'Review Application',
             actionUrl: route('admin.job-seekers.show', $user->id),
-        ));
+        );
 
         return redirect()->route('job-seeker.dashboard')
             ->with('success', "Application submitted! Reference: {$application->reference_number}. Our team will review it shortly.");

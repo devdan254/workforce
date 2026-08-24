@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\JobPosting;
 use App\Models\User;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -91,6 +92,13 @@ class JobApplicationController extends Controller
         $user->assignRole('job_seeker');
 
         event(new Registered($user));
+
+        AdminAlertNotification::sendToAdmins(
+            heading: 'New Job Seeker Registered',
+            lines: ['Name' => $user->name, 'Email' => $user->email],
+            actionLabel: 'View in Admin',
+            actionUrl: route('admin.job-seekers.show', $user),
+        );
 
         Auth::login($user);
 

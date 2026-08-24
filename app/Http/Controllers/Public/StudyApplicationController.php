@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers\Public;
 
-use App\Mail\AdminNotificationMail;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\StudyApplication;
 use App\Models\StudyPosting;
 use App\Models\University;
 use App\Models\User;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
@@ -109,6 +108,14 @@ class StudyApplicationController extends Controller
             ]);
             $user->assignRole('student');
             event(new Registered($user));
+
+            AdminAlertNotification::sendToAdmins(
+                heading: 'New Student Registered',
+                lines: ['Name' => $user->name, 'Email' => $user->email],
+                actionLabel: 'View in Admin',
+                actionUrl: route('admin.students.show', $user),
+            );
+
             Auth::login($user);
         } else {
             $user = $request->user();
@@ -160,7 +167,7 @@ class StudyApplicationController extends Controller
             ]);
         });
 
-        Mail::to(config('notifications.admin_email'))->send(new AdminNotificationMail(
+        AdminAlertNotification::sendToAdmins(
             heading: 'New Study Abroad Application Received',
             lines: [
                 'Applicant' => $user->name,
@@ -171,7 +178,7 @@ class StudyApplicationController extends Controller
             ],
             actionLabel: 'Review Application',
             actionUrl: route('admin.students.show', $user->id),
-        ));
+        );
 
         return redirect()->route('student.applications.show', $application)
             ->with('success', 'Your application has been started. Our education advisors will review it shortly.');

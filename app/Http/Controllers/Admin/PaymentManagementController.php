@@ -68,7 +68,8 @@ class PaymentManagementController extends Controller
             $query->whereDate('paid_at', '<=', $request->date('date_to'));
         }
 
-        $payments = $query->latest('paid_at')->paginate(20)->withQueryString();
+        $payments = $query->latest('created_at')->paginate(20)->withQueryString();
+
 
         // Per-row category label, computed once here rather than
         // re-evaluating the same match() in the view for every row.

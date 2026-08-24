@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Mail\AdminNotificationMail;
 use App\Models\Document;
 use App\Models\DocumentCategory;
 use App\Models\StatusTransition;
 use App\Models\User;
 use App\Models\VisaApplication;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -178,7 +177,7 @@ class VisaApplicationController extends Controller
         // Admin to review properly in Visa Management (documents included,
         // via the link below), so there's no reason to duplicate every
         // field — or the files themselves — into the email body too.
-        Mail::to(config('notifications.admin_email'))->send(new AdminNotificationMail(
+        AdminAlertNotification::sendToAdmins(
             heading: 'New Visa Application Submitted',
             lines: [
                 'Applicant' => $guest->name,
@@ -187,7 +186,7 @@ class VisaApplicationController extends Controller
             ],
             actionLabel: 'Review Visa Application',
             actionUrl: route('admin.visa-management.show', $visaApplication),
-        ));
+        );
 
         return redirect()->route('public.visa-application-form')->with('success', true);
     }

@@ -3,15 +3,14 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Mail\AdminNotificationMail;
 use App\Models\User;
 use App\Models\WorkerRequest;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -92,6 +91,14 @@ class HireController extends Controller
             ]);
             $employer->assignRole('employer');
             event(new Registered($employer));
+
+            AdminAlertNotification::sendToAdmins(
+                heading: 'New Employer Registered',
+                lines: ['Name' => $employer->name, 'Email' => $employer->email],
+                actionLabel: 'View in Admin',
+                actionUrl: route('admin.employers.show', $employer),
+            );
+
             Auth::login($employer);
 
             $employer->employerProfile()->create([
@@ -139,7 +146,7 @@ class HireController extends Controller
         // dump. WorkerRequest is a real, persisted record Admin already
         // reviews in the Worker Requests queue; the email is just the
         // heads-up + a direct link, not a duplicate of the data itself.
-        Mail::to(config('notifications.admin_email'))->send(new AdminNotificationMail(
+        AdminAlertNotification::sendToAdmins(
             heading: 'New Worker Request Submitted',
             lines: [
                 'Company' => $employer->employerProfile?->company_name ?? $request->string('company_name'),
@@ -147,7 +154,7 @@ class HireController extends Controller
             ],
             actionLabel: 'Review Worker Request',
             actionUrl: route('admin.worker-requests.show', $workerRequest),
-        ));
+        );
 
         return redirect()->route('employer.worker-requests.show', $workerRequest)
             ->with('success', 'Your request has been submitted. A recruitment specialist will contact you within 1–2 business days.');
