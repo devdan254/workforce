@@ -2,7 +2,7 @@
 
     <div class="mb-4">
         <h2 class="h4 fw-semibold mb-1" style="font-family:'Poppins',sans-serif;color:#082159;">Welcome back, {{ explode(' ', auth()->user()->name)[0] }}!</h2>
-        <p class="text-secondary mb-0">Overview of Altura Workforce Solutions.</p>
+        <p class="text-secondary mb-0">Here's a 360° overview of Altura Workforce Solutions right now.</p>
     </div>
 
     {{-- ============ ROW 1 — FINANCIAL OVERVIEW ============ --}}
